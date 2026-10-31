@@ -4,16 +4,10 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
-import {
-  BookOpen,
-  Mail,
-  Lock,
-  Eye,
-  EyeOff,
-  ArrowRight,
-} from "lucide-react";
+import { BookOpen, Mail, Lock, Eye, EyeOff, ArrowRight } from "lucide-react";
 
 import { authClient } from "@/lib/auth-client";
+import { toast } from "react-toastify";
 
 export default function SignInPage() {
   const router = useRouter();
@@ -38,14 +32,18 @@ export default function SignInPage() {
       });
 
       if (error) {
-        setError(error.message || "Invalid email or password.");
+        setError(error.message || "Login failed.");
+        toast.error(error.message || "Login failed.");
         return;
       }
+
+      toast.success("Login successful! Welcome back to NovelNest.");
 
       router.push("/");
       router.refresh();
     } catch {
       setError("Something went wrong. Please try again.");
+      toast.error("Something went wrong. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -75,10 +73,8 @@ export default function SignInPage() {
   return (
     <main className="flex min-h-screen items-center justify-center bg-[#F8F6EF] p-4 sm:p-6">
       <div className="grid w-full max-w-6xl overflow-hidden rounded-[28px] bg-white shadow-2xl lg:grid-cols-2">
-
         {/* LEFT BRANDING SECTION */}
         <section className="relative hidden min-h-[700px] flex-col justify-between overflow-hidden bg-[#173F35] p-12 text-white lg:flex">
-
           <div className="absolute -right-24 top-24 h-80 w-80 rounded-full border border-[#D8B76A]/30" />
 
           <div className="absolute -right-12 top-36 h-56 w-56 rounded-full border border-[#D8B76A]/30" />
@@ -88,9 +84,7 @@ export default function SignInPage() {
               <BookOpen size={28} />
             </div>
 
-            <span className="text-2xl font-bold tracking-tight">
-              NovelNest
-            </span>
+            <span className="text-2xl font-bold tracking-tight">NovelNest</span>
           </Link>
 
           <div className="relative z-10 max-w-md">
@@ -103,8 +97,8 @@ export default function SignInPage() {
             </h1>
 
             <p className="mt-6 text-lg leading-8 text-white/65">
-              Return to your personal reading space. Discover books,
-              collect stories, and continue your journey.
+              Return to your personal reading space. Discover books, collect
+              stories, and continue your journey.
             </p>
 
             <div className="mt-10 rounded-2xl border border-white/10 bg-white/5 p-6">
@@ -126,12 +120,8 @@ export default function SignInPage() {
         {/* RIGHT SIGN IN FORM */}
         <section className="flex items-center justify-center px-6 py-12 sm:px-14 lg:py-16">
           <div className="w-full max-w-md">
-
             {/* MOBILE LOGO */}
-            <Link
-              href="/"
-              className="mb-10 flex items-center gap-3 lg:hidden"
-            >
+            <Link href="/" className="mb-10 flex items-center gap-3 lg:hidden">
               <div className="rounded-xl bg-[#173F35] p-3 text-[#D8B76A]">
                 <BookOpen size={25} />
               </div>
@@ -151,14 +141,13 @@ export default function SignInPage() {
               </h2>
 
               <p className="mt-3 leading-6 text-gray-500">
-                Sign in to explore your library and continue your
-                reading journey.
+                Sign in to explore your library and continue your reading
+                journey.
               </p>
             </div>
 
             {/* SOCIAL LOGIN */}
             <div className="mt-9 grid grid-cols-2 gap-4">
-
               {/* GOOGLE LOGIN */}
               <button
                 type="button"
@@ -166,11 +155,7 @@ export default function SignInPage() {
                 disabled={loading}
                 className="flex items-center justify-center gap-3 rounded-xl border border-gray-200 bg-white py-3.5 text-sm font-semibold text-[#173F35] transition hover:border-[#B18B43] hover:bg-[#F8F6EF] disabled:cursor-not-allowed disabled:opacity-50"
               >
-                <svg
-                  viewBox="0 0 48 48"
-                  className="h-5 w-5"
-                  aria-hidden="true"
-                >
+                <svg viewBox="0 0 48 48" className="h-5 w-5" aria-hidden="true">
                   <path
                     fill="#EA4335"
                     d="M24 9.5c3.5 0 6.6 1.2 9 3.5l6.7-6.7C35.6 2.4 30.2 0 24 0 14.6 0 6.5 5.4 2.6 13.3l7.8 6.1C12.3 13.8 17.6 9.5 24 9.5Z"
@@ -188,7 +173,6 @@ export default function SignInPage() {
                     d="M24 48c6.5 0 12-2.1 16-5.9l-7.5-5.8c-2.1 1.4-4.8 2.2-8.5 2.2-6.4 0-11.7-4.3-13.6-10.1l-7.8 6.1C6.5 42.6 14.6 48 24 48Z"
                   />
                 </svg>
-
                 Google
               </button>
 
@@ -207,7 +191,6 @@ export default function SignInPage() {
                 >
                   <path d="M12 .9a11.1 11.1 0 0 0-3.51 21.63c.55.1.76-.24.76-.54v-2.08c-3.1.67-3.76-1.32-3.76-1.32-.5-1.29-1.24-1.63-1.24-1.63-1.01-.69.08-.68.08-.68 1.12.08 1.71 1.15 1.71 1.15.99 1.7 2.6 1.21 3.23.92.1-.72.39-1.21.7-1.49-2.48-.28-5.09-1.24-5.09-5.53 0-1.22.44-2.21 1.15-2.99-.12-.28-.5-1.42.11-2.95 0 0 .94-.3 3.05 1.14a10.6 10.6 0 0 1 5.55 0c2.11-1.44 3.05-1.14 3.05-1.14.61 1.53.23 2.67.11 2.95.72.78 1.15 1.77 1.15 2.99 0 4.3-2.61 5.25-5.1 5.52.4.35.75 1.03.75 2.08v3.09c0 .3.2.65.76.54A11.1 11.1 0 0 0 12 .9Z" />
                 </svg>
-
                 GitHub
               </button>
             </div>
@@ -227,7 +210,6 @@ export default function SignInPage() {
 
             {/* EMAIL LOGIN */}
             <form onSubmit={handleSubmit} className="space-y-5">
-
               {/* EMAIL */}
               <div>
                 <label
@@ -282,11 +264,7 @@ export default function SignInPage() {
                     }
                     className="text-gray-400 transition hover:text-[#173F35]"
                   >
-                    {showPassword ? (
-                      <EyeOff size={19} />
-                    ) : (
-                      <Eye size={19} />
-                    )}
+                    {showPassword ? <EyeOff size={19} /> : <Eye size={19} />}
                   </button>
                 </div>
               </div>
