@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 
 import {
   BookOpen,
@@ -16,7 +16,6 @@ import {
   Bookmark,
   UserRound,
   LogOut,
-  ChevronDown,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -30,24 +29,13 @@ import {
 } from "@/components/ui/sheet";
 
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from "@/components/ui/avatar";
 
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-
-interface NavbarProps {
-  user?: {
-    name?: string;
-    email?: string;
-    image?: string;
-  } | null;
-  onLogout?: () => void;
-}
+import { authClient } from "@/lib/auth-client";
+import { toast } from "react-toastify";
 
 const publicLinks = [
   { name: "Home", href: "/", icon: Home },
@@ -60,11 +48,12 @@ const privateLinks = [
   { name: "My Borrows", href: "/my-borrows", icon: Bookmark },
 ];
 
-export default function Navbar({
-  user = null,
-  onLogout,
-}: NavbarProps) {
+export default function Navbar() {
   const pathname = usePathname();
+  const router = useRouter();
+
+  const { data: session, isPending } = authClient.useSession();
+  const user = session?.user ?? null;
 
   const [darkMode, setDarkMode] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -95,15 +84,38 @@ export default function Navbar({
       : pathname === href || pathname.startsWith(`${href}/`);
   };
 
+  // Logout
+  const handleLogout = async () => {
+    try {
+      const { error } = await authClient.signOut();
+
+      if (error) {
+        toast.error(error.message || "Logout failed.");
+        return;
+      }
+
+      toast.success("Logged out successfully!");
+
+      setMobileOpen(false);
+      router.push("/");
+      router.refresh();
+    } catch {
+      toast.error("Something went wrong. Please try again.");
+    }
+  };
+
   const links = [...publicLinks, ...(user ? privateLinks : [])];
 
   return (
-    <header className="sticky top-0 z-50 border-b border-slate-200/80 bg-white/90 backdrop-blur-xl dark:border-slate-800 dark:bg-[#101b1b]/90">
-      <nav className="mx-auto flex h-[82px] max-w-[1400px] items-center justify-between px-5 lg:px-10">
+    <header className="sticky top-0 z-50 border-b border-slate-200/80 bg-white/90 backdrop-blur-xl dark:border-slate-800 dark:bg-[#101b1b]/95">
+      <nav className="mx-auto flex h-[72px] max-w-[1400px] items-center justify-between px-4 sm:px-6 lg:h-[82px] lg:px-10">
 
         {/* BRAND */}
-        <Link href="/" className="group flex shrink-0 items-center gap-3">
-          <div className="relative h-12 w-12 overflow-hidden rounded-xl shadow-sm transition duration-300 group-hover:scale-105">
+        <Link
+          href="/"
+          className="group flex shrink-0 items-center gap-2 sm:gap-3"
+        >
+          <div className="relative h-10 w-10 overflow-hidden rounded-xl shadow-sm transition duration-300 group-hover:scale-105 sm:h-12 sm:w-12">
             <Image
               src="/novelNestLogo.jpg"
               alt="NovelNest Logo"
@@ -115,18 +127,18 @@ export default function Navbar({
           </div>
 
           <div>
-            <h1 className="text-[25px] font-extrabold tracking-tight text-[#075b55] dark:text-white">
+            <h1 className="text-xl font-extrabold tracking-tight text-[#075b55] dark:text-white sm:text-[25px]">
               NovelNest<span className="text-[#d5b36a]">.</span>
             </h1>
 
-            <p className="text-[9px] font-bold uppercase tracking-[2.5px] text-slate-500 dark:text-slate-400">
+            <p className="hidden text-[9px] font-bold uppercase tracking-[2px] text-slate-500 dark:text-slate-400 sm:block sm:tracking-[2.5px]">
               A World Between Pages
             </p>
           </div>
         </Link>
 
         {/* DESKTOP NAVIGATION */}
-        <div className="hidden items-center gap-7 xl:flex">
+        <div className="hidden items-center gap-5 xl:flex 2xl:gap-7">
           {links.map((link) => (
             <Link
               key={link.href}
@@ -164,7 +176,11 @@ export default function Navbar({
             )}
           </Button>
 
-          {!user ? (
+          {/* AUTH LOADING */}
+          {isPending ? (
+            <div className="h-10 w-28 animate-pulse rounded-full bg-slate-200 dark:bg-slate-700" />
+          ) : !user ? (
+            /* LOGGED OUT */
             <>
               <Link
                 href="/sign-in"
@@ -181,61 +197,46 @@ export default function Navbar({
               </Link>
             </>
           ) : (
-            /* PROFILE DROPDOWN */
-            <DropdownMenu>
-              <DropdownMenuTrigger
-                className="flex items-center gap-2 rounded-full border border-slate-200 px-2 py-1 outline-none hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800"
-                aria-label="Open profile menu"
+            /* LOGGED IN */
+            <div className="flex items-center gap-3">
+              <Link
+                href="/profile"
+                className="flex max-w-[190px] items-center gap-2 rounded-full border border-slate-200 px-2 py-1.5 transition hover:border-[#087f75] hover:bg-teal-50 dark:border-slate-700 dark:hover:bg-slate-800"
+                aria-label="View profile"
               >
-                <Avatar className="h-8 w-8">
+                <Avatar className="h-9 w-9">
                   <AvatarImage
                     src={user.image || ""}
                     alt={user.name || "User"}
                   />
-                  <AvatarFallback className="bg-teal-100 text-teal-800">
+                  <AvatarFallback className="bg-teal-100 font-bold text-teal-800">
                     {user.name?.charAt(0).toUpperCase() || "U"}
                   </AvatarFallback>
                 </Avatar>
 
-                <span className="max-w-24 truncate text-sm font-semibold">
+                <span className="max-w-24 truncate text-sm font-semibold text-slate-700 dark:text-white">
                   {user.name || "Reader"}
                 </span>
 
-                <ChevronDown size={15} />
-              </DropdownMenuTrigger>
+                <UserRound
+                  size={16}
+                  className="shrink-0 text-[#087f75]"
+                />
+              </Link>
 
-              <DropdownMenuContent align="end" className="w-64 rounded-xl p-2">
-                <DropdownMenuLabel>
-                  <p className="font-bold">{user.name || "Reader"}</p>
-                  <p className="mt-1 truncate text-xs font-normal text-muted-foreground">
-                    {user.email}
-                  </p>
-                </DropdownMenuLabel>
-
-                <DropdownMenuSeparator />
-
-                <DropdownMenuItem asChild>
-                  <Link href="/profile" className="cursor-pointer">
-                    <UserRound className="mr-2 h-4 w-4" />
-                    My Profile
-                  </Link>
-                </DropdownMenuItem>
-
-                <DropdownMenuSeparator />
-
-                <DropdownMenuItem
-                  onClick={onLogout}
-                  className="cursor-pointer text-red-600 focus:text-red-600"
-                >
-                  <LogOut className="mr-2 h-4 w-4" />
-                  Logout
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+              <Button
+                variant="outline"
+                onClick={handleLogout}
+                className="rounded-full border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+              >
+                <LogOut className="mr-2 h-4 w-4" />
+                Logout
+              </Button>
+            </div>
           )}
         </div>
 
-        {/* MOBILE NAVIGATION */}
+        {/* MOBILE AND TABLET ACTIONS */}
         <div className="flex items-center gap-2 xl:hidden">
 
           {/* MOBILE THEME BUTTON */}
@@ -244,7 +245,7 @@ export default function Navbar({
             size="icon"
             onClick={toggleTheme}
             aria-label="Toggle theme"
-            className="rounded-xl"
+            className="h-9 w-9 rounded-xl sm:h-10 sm:w-10"
           >
             {darkMode ? (
               <Sun className="h-5 w-5 text-yellow-500" />
@@ -253,24 +254,25 @@ export default function Navbar({
             )}
           </Button>
 
+          {/* MOBILE MENU */}
           <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
-            {/* FIXED: No nested button */}
             <SheetTrigger
               aria-label="Open navigation"
-              className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#087f75] text-white transition hover:bg-[#066a62]"
+              className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#087f75] text-white transition hover:bg-[#066a62] sm:h-10 sm:w-10"
             >
               <Menu className="h-5 w-5" />
             </SheetTrigger>
 
             <SheetContent
               side="right"
-              className="w-[300px] overflow-y-auto sm:w-[350px]"
+              className="w-[290px] overflow-y-auto sm:w-[350px]"
             >
+              {/* MOBILE HEADER */}
               <SheetHeader className="border-b pb-5 text-left">
                 <SheetTitle className="flex items-center gap-3">
                   <div className="relative h-10 w-10 overflow-hidden rounded-lg">
                     <Image
-                      src="/novelnest-logo.jpg"
+                      src="/novelNestLogo.jpg"
                       alt="NovelNest"
                       fill
                       sizes="40px"
@@ -284,7 +286,7 @@ export default function Navbar({
                 </SheetTitle>
               </SheetHeader>
 
-              {/* MOBILE LINKS */}
+              {/* MOBILE NAVIGATION LINKS */}
               <div className="mt-7 flex flex-col gap-2">
                 <p className="mb-2 px-3 text-xs font-bold uppercase tracking-widest text-muted-foreground">
                   Navigation
@@ -311,71 +313,80 @@ export default function Navbar({
                 })}
               </div>
 
-              {/* MOBILE AUTH */}
-              {!user ? (
-                <div className="mt-8 grid grid-cols-2 gap-3">
-                  <Link
-                    href="/sign-in"
-                    onClick={() => setMobileOpen(false)}
-                    className="flex items-center justify-center rounded-full border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 dark:border-slate-700 dark:text-white dark:hover:bg-slate-800"
-                  >
-                    Login
-                  </Link>
+              {/* MOBILE AUTH SECTION */}
+              <div className="mt-8 border-t pt-5">
 
-                  <Link
-                    href="/sign-up"
-                    onClick={() => setMobileOpen(false)}
-                    className="flex items-center justify-center rounded-full bg-[#087f75] px-3 py-2 text-sm font-semibold text-white transition hover:bg-[#066a62]"
-                  >
-                    Register
-                  </Link>
-                </div>
-              ) : (
-                <div className="mt-8 border-t pt-5">
-                  <div className="mb-4 flex items-center gap-3">
-                    <Avatar>
-                      <AvatarImage
-                        src={user.image || ""}
-                        alt={user.name || "User"}
-                      />
-                      <AvatarFallback>
-                        {user.name?.charAt(0).toUpperCase() || "U"}
-                      </AvatarFallback>
-                    </Avatar>
+                {isPending ? (
+                  <div className="h-12 animate-pulse rounded-xl bg-slate-200 dark:bg-slate-700" />
+                ) : !user ? (
+                  /* LOGGED OUT */
+                  <div className="grid grid-cols-2 gap-3">
+                    <Link
+                      href="/sign-in"
+                      onClick={() => setMobileOpen(false)}
+                      className="flex items-center justify-center rounded-full border border-slate-300 px-3 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 dark:border-slate-700 dark:text-white dark:hover:bg-slate-800"
+                    >
+                      Login
+                    </Link>
 
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-bold">
-                        {user.name}
-                      </p>
-                      <p className="truncate text-xs text-muted-foreground">
-                        {user.email}
-                      </p>
-                    </div>
+                    <Link
+                      href="/sign-up"
+                      onClick={() => setMobileOpen(false)}
+                      className="flex items-center justify-center rounded-full bg-[#087f75] px-3 py-3 text-sm font-semibold text-white transition hover:bg-[#066a62]"
+                    >
+                      Get Started
+                    </Link>
                   </div>
+                ) : (
+                  /* LOGGED IN */
+                  <div>
+                    <p className="mb-4 px-3 text-xs font-bold uppercase tracking-widest text-muted-foreground">
+                      Your Account
+                    </p>
 
-                  <Link
-                    href="/profile"
-                    onClick={() => setMobileOpen(false)}
-                    className="mb-3 flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold hover:bg-slate-100 dark:hover:bg-slate-800"
-                  >
-                    <UserRound size={18} />
-                    My Profile
-                  </Link>
+                    <Link
+                      href="/profile"
+                      onClick={() => setMobileOpen(false)}
+                      className="mb-4 flex items-center gap-3 rounded-xl border border-slate-200 p-3 transition hover:border-[#087f75] hover:bg-teal-50 dark:border-slate-700 dark:hover:bg-slate-800"
+                    >
+                      <Avatar className="h-11 w-11">
+                        <AvatarImage
+                          src={user.image || ""}
+                          alt={user.name || "User"}
+                        />
+                        <AvatarFallback className="bg-teal-100 font-bold text-teal-800">
+                          {user.name?.charAt(0).toUpperCase() || "U"}
+                        </AvatarFallback>
+                      </Avatar>
 
-                  <Button
-                    variant="outline"
-                    className="w-full justify-start text-red-600"
-                    onClick={() => {
-                      setMobileOpen(false);
-                      onLogout?.();
-                    }}
-                  >
-                    <LogOut className="mr-2 h-4 w-4" />
-                    Logout
-                  </Button>
-                </div>
-              )}
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-bold text-slate-800 dark:text-white">
+                          {user.name || "Reader"}
+                        </p>
 
+                        <p className="truncate text-xs text-slate-500 dark:text-slate-400">
+                          {user.email}
+                        </p>
+
+                        <p className="mt-1 text-xs font-semibold text-[#087f75]">
+                          View Profile
+                        </p>
+                      </div>
+                    </Link>
+
+                    <Button
+                      variant="outline"
+                      className="w-full justify-start rounded-xl border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+                      onClick={handleLogout}
+                    >
+                      <LogOut className="mr-2 h-4 w-4" />
+                      Logout
+                    </Button>
+                  </div>
+                )}
+              </div>
+
+              {/* MOBILE FOOTER */}
               <div className="mt-8 border-t pt-5">
                 <p className="text-center text-xs text-muted-foreground">
                   Read. Discover. Imagine.

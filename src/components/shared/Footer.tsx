@@ -13,6 +13,7 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import Image from "next/image";
 
 const quickLinks = [
   { name: "Home", href: "/" },
@@ -55,9 +56,16 @@ export default function Footer() {
           {/* Brand */}
           <div className="lg:col-span-1">
             <Link href="/" className="inline-flex items-center gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#d5b36a] text-[#102e2b]">
-                <BookOpen size={26} />
-              </div>
+             <div className="relative h-10 w-10 overflow-hidden rounded-xl shadow-sm transition duration-300 group-hover:scale-105 sm:h-12 sm:w-12">
+                         <Image
+                           src="/novelNestLogo.jpg"
+                           alt="NovelNest Logo"
+                           fill
+                           priority
+                           sizes="48px"
+                           className="object-cover"
+                         />
+                       </div>
 
               <div>
                 <h2 className="text-2xl font-bold tracking-tight">
