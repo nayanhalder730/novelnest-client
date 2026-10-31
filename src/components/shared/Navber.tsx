@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+
 import {
   Sheet,
   SheetContent,
@@ -59,7 +60,10 @@ const privateLinks = [
   { name: "My Borrows", href: "/my-borrows", icon: Bookmark },
 ];
 
-export default function Navbar({ user = null, onLogout }: NavbarProps) {
+export default function Navbar({
+  user = null,
+  onLogout,
+}: NavbarProps) {
   const pathname = usePathname();
 
   const [darkMode, setDarkMode] = useState(false);
@@ -79,7 +83,6 @@ export default function Navbar({ user = null, onLogout }: NavbarProps) {
     const nextTheme = !darkMode;
 
     setDarkMode(nextTheme);
-
     document.documentElement.classList.toggle("dark", nextTheme);
 
     localStorage.setItem("theme", nextTheme ? "dark" : "light");
@@ -97,6 +100,7 @@ export default function Navbar({ user = null, onLogout }: NavbarProps) {
   return (
     <header className="sticky top-0 z-50 border-b border-slate-200/80 bg-white/90 backdrop-blur-xl dark:border-slate-800 dark:bg-[#101b1b]/90">
       <nav className="mx-auto flex h-[82px] max-w-[1400px] items-center justify-between px-5 lg:px-10">
+
         {/* BRAND */}
         <Link href="/" className="group flex shrink-0 items-center gap-3">
           <div className="relative h-12 w-12 overflow-hidden rounded-xl shadow-sm transition duration-300 group-hover:scale-105">
@@ -144,6 +148,7 @@ export default function Navbar({ user = null, onLogout }: NavbarProps) {
 
         {/* DESKTOP ACTIONS */}
         <div className="hidden items-center gap-3 xl:flex">
+
           {/* THEME BUTTON */}
           <Button
             variant="outline"
@@ -161,45 +166,42 @@ export default function Navbar({ user = null, onLogout }: NavbarProps) {
 
           {!user ? (
             <>
-              <Button
-                variant="ghost"
-                
-                className="rounded-full font-semibold text-[#075b55] hover:bg-teal-50 dark:text-teal-300 dark:hover:bg-slate-800"
+              <Link
+                href="/sign-in"
+                className="rounded-full px-4 py-2 font-semibold text-[#075b55] transition hover:bg-teal-50 dark:text-teal-300 dark:hover:bg-slate-800"
               >
-                <Link href="/login">Login</Link>
-              </Button>
+                Login
+              </Link>
 
-              <Button
-            
-                className="rounded-full bg-[#087f75] px-6 font-semibold text-white shadow-md hover:bg-[#066a62]"
+              <Link
+                href="/sign-up"
+                className="rounded-full bg-[#087f75] px-6 py-2 font-semibold text-white shadow-md transition hover:bg-[#066a62]"
               >
-                <Link href="/register">Get Started</Link>
-              </Button>
+                Get Started
+              </Link>
             </>
           ) : (
             /* PROFILE DROPDOWN */
             <DropdownMenu>
-              <DropdownMenuTrigger>
-                <Button
-                  variant="outline"
-                  className="gap-2 rounded-full border-slate-200 px-2 dark:border-slate-700"
-                >
-                  <Avatar className="h-8 w-8">
-                    <AvatarImage
-                      src={user.image || ""}
-                      alt={user.name || "User"}
-                    />
-                    <AvatarFallback className="bg-teal-100 text-teal-800">
-                      {user.name?.charAt(0).toUpperCase() || "U"}
-                    </AvatarFallback>
-                  </Avatar>
+              <DropdownMenuTrigger
+                className="flex items-center gap-2 rounded-full border border-slate-200 px-2 py-1 outline-none hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800"
+                aria-label="Open profile menu"
+              >
+                <Avatar className="h-8 w-8">
+                  <AvatarImage
+                    src={user.image || ""}
+                    alt={user.name || "User"}
+                  />
+                  <AvatarFallback className="bg-teal-100 text-teal-800">
+                    {user.name?.charAt(0).toUpperCase() || "U"}
+                  </AvatarFallback>
+                </Avatar>
 
-                  <span className="max-w-24 truncate text-sm font-semibold">
-                    {user.name || "Reader"}
-                  </span>
+                <span className="max-w-24 truncate text-sm font-semibold">
+                  {user.name || "Reader"}
+                </span>
 
-                  <ChevronDown size={15} />
-                </Button>
+                <ChevronDown size={15} />
               </DropdownMenuTrigger>
 
               <DropdownMenuContent align="end" className="w-64 rounded-xl p-2">
@@ -212,7 +214,7 @@ export default function Navbar({ user = null, onLogout }: NavbarProps) {
 
                 <DropdownMenuSeparator />
 
-                <DropdownMenuItem>
+                <DropdownMenuItem asChild>
                   <Link href="/profile" className="cursor-pointer">
                     <UserRound className="mr-2 h-4 w-4" />
                     My Profile
@@ -235,6 +237,8 @@ export default function Navbar({ user = null, onLogout }: NavbarProps) {
 
         {/* MOBILE NAVIGATION */}
         <div className="flex items-center gap-2 xl:hidden">
+
+          {/* MOBILE THEME BUTTON */}
           <Button
             variant="outline"
             size="icon"
@@ -250,15 +254,12 @@ export default function Navbar({ user = null, onLogout }: NavbarProps) {
           </Button>
 
           <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
-            <SheetTrigger>
-              <Button
-                variant="default"
-                size="icon"
-                className="rounded-xl bg-[#087f75] text-white hover:bg-[#066a62]"
-                aria-label="Open navigation"
-              >
-                <Menu className="h-5 w-5" />
-              </Button>
+            {/* FIXED: No nested button */}
+            <SheetTrigger
+              aria-label="Open navigation"
+              className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#087f75] text-white transition hover:bg-[#066a62]"
+            >
+              <Menu className="h-5 w-5" />
             </SheetTrigger>
 
             <SheetContent
@@ -313,36 +314,53 @@ export default function Navbar({ user = null, onLogout }: NavbarProps) {
               {/* MOBILE AUTH */}
               {!user ? (
                 <div className="mt-8 grid grid-cols-2 gap-3">
-                  <Button variant="outline" className="rounded-full">
-                    <Link href="/login" onClick={() => setMobileOpen(false)}>
-                      Login
-                    </Link>
-                  </Button>
-
-                  <Button
-                
-                    className="rounded-full bg-[#087f75] hover:bg-[#066a62]"
+                  <Link
+                    href="/sign-in"
+                    onClick={() => setMobileOpen(false)}
+                    className="flex items-center justify-center rounded-full border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 dark:border-slate-700 dark:text-white dark:hover:bg-slate-800"
                   >
-                    <Link href="/register" onClick={() => setMobileOpen(false)}>
-                      Register
-                    </Link>
-                  </Button>
+                    Login
+                  </Link>
+
+                  <Link
+                    href="/sign-up"
+                    onClick={() => setMobileOpen(false)}
+                    className="flex items-center justify-center rounded-full bg-[#087f75] px-3 py-2 text-sm font-semibold text-white transition hover:bg-[#066a62]"
+                  >
+                    Register
+                  </Link>
                 </div>
               ) : (
                 <div className="mt-8 border-t pt-5">
                   <div className="mb-4 flex items-center gap-3">
                     <Avatar>
-                      <AvatarImage src={user.image || ""} />
-                      <AvatarFallback>U</AvatarFallback>
+                      <AvatarImage
+                        src={user.image || ""}
+                        alt={user.name || "User"}
+                      />
+                      <AvatarFallback>
+                        {user.name?.charAt(0).toUpperCase() || "U"}
+                      </AvatarFallback>
                     </Avatar>
 
                     <div className="min-w-0">
-                      <p className="truncate text-sm font-bold">{user.name}</p>
+                      <p className="truncate text-sm font-bold">
+                        {user.name}
+                      </p>
                       <p className="truncate text-xs text-muted-foreground">
                         {user.email}
                       </p>
                     </div>
                   </div>
+
+                  <Link
+                    href="/profile"
+                    onClick={() => setMobileOpen(false)}
+                    className="mb-3 flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold hover:bg-slate-100 dark:hover:bg-slate-800"
+                  >
+                    <UserRound size={18} />
+                    My Profile
+                  </Link>
 
                   <Button
                     variant="outline"

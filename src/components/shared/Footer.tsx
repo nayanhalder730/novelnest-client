@@ -153,20 +153,20 @@ export default function Footer() {
               <li className="flex items-start gap-3">
                 <Mail className="mt-1 shrink-0 text-[#d5b36a]" size={18} />
                 <a
-                  href="mailto:your-email@example.com"
+                  href="mailto:nayanh730@gmail.com"
                   className="text-sm text-slate-300 transition hover:text-[#d5b36a]"
                 >
-                  your-email@example.com
+                  nayanh730@gmail.com
                 </a>
               </li>
 
               <li className="flex items-start gap-3">
                 <Phone className="mt-1 shrink-0 text-[#d5b36a]" size={18} />
                 <a
-                  href="tel:+8801000000000"
+                  href="tel:+8801770780381"
                   className="text-sm text-slate-300 transition hover:text-[#d5b36a]"
                 >
-                  +880 1000-000000
+                  +880 1770-780381
                 </a>
               </li>
 
