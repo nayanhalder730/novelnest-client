@@ -51,24 +51,30 @@ export default function SignInPage() {
 
   // Google and GitHub login
   const handleSocialLogin = async (provider: "google" | "github") => {
-    setError("");
-    setLoading(true);
+  setError("");
+  setLoading(true);
 
-    try {
-      const { error } = await authClient.signIn.social({
-        provider,
-        callbackURL: "/",
-      });
+  try {
+    const { error } = await authClient.signIn.social({
+      provider,
+      callbackURL: `/?socialAuth=success&provider=${provider}`,
+    });
 
-      if (error) {
-        setError(error.message || `${provider} login failed.`);
-        setLoading(false);
-      }
-    } catch {
-      setError("Unable to connect. Please try again.");
+    if (error) {
+      const errorMessage = error.message || `${provider} login failed.`;
+
+      setError(errorMessage);
+      toast.error(errorMessage);
       setLoading(false);
     }
-  };
+  } catch {
+    const errorMessage = "Unable to connect. Please try again.";
+
+    setError(errorMessage);
+    toast.error(errorMessage);
+    setLoading(false);
+  }
+};
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-[#F8F6EF] p-4 sm:p-6">
