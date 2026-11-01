@@ -204,7 +204,7 @@ export default function Footer() {
             </div>
 
             <Link
-              href="/books"
+              href="/all-books"
               className="inline-flex items-center rounded-full bg-[#d5b36a] px-7 py-3 font-semibold text-[#102e2b] transition hover:bg-[#e4c77f]"
             >
               Explore Books

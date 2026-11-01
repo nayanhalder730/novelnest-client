@@ -39,7 +39,7 @@ import { toast } from "react-toastify";
 
 const publicLinks = [
   { name: "Home", href: "/", icon: Home },
-  { name: "Explore Books", href: "/books", icon: BookOpen },
+  { name: "Explore Books", href: "/all-books", icon: BookOpen },
 ];
 
 const privateLinks = [

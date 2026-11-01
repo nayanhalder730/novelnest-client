@@ -6,6 +6,8 @@ import Navbar from "@/components/shared/Navber";
 import Footer from "@/components/shared/Footer";
 import "react-toastify/dist/ReactToastify.css";
 import { ToastContainer } from "react-toastify";
+import { Toaster } from "sonner";
+import { Suspense } from "react";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -35,7 +37,13 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="flex min-h-full flex-col">
-        <Navbar />
+      <Suspense
+          fallback={
+            <div className="h-20 bg-[#173F35]" />
+          }
+        >
+          <Navbar />
+        </Suspense>
 
         <main className="flex-1">{children}</main>
 
@@ -49,6 +57,7 @@ export default function RootLayout({
           pauseOnHover
           theme="colored"
         />
+         <Toaster position="top-right" richColors />
       </body>
     </html>
   );
