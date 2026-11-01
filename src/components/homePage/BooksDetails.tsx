@@ -1,4 +1,3 @@
-
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -11,6 +10,7 @@ import {
   Library,
   UserRound,
 } from "lucide-react";
+import BorrowButton from "../books/BorrowButton";
 
 export const instant = false;
 
@@ -88,7 +88,6 @@ export default async function BookDetails({
 
         <div className="overflow-hidden rounded-3xl border border-[#173F35]/10 bg-white shadow-sm">
           <div className="grid grid-cols-1 lg:grid-cols-2">
-
             {/* Book Cover */}
             <div className="flex items-center justify-center bg-[#173F35] p-8 md:p-14">
               <div className="relative h-[380px] w-full max-w-[280px] overflow-hidden rounded-xl shadow-2xl md:h-[480px] md:max-w-[340px]">
@@ -132,7 +131,8 @@ export default async function BookDetails({
                 </h2>
 
                 <p className="text-sm leading-8 text-gray-600 md:text-base">
-                  {book.description || "No description available for this book."}
+                  {book.description ||
+                    "No description available for this book."}
                 </p>
               </div>
 
@@ -173,9 +173,7 @@ export default async function BookDetails({
 
                 <span
                   className={`text-sm font-semibold ${
-                    availableCopies > 0
-                      ? "text-green-700"
-                      : "text-red-600"
+                    availableCopies > 0 ? "text-green-700" : "text-red-600"
                   }`}
                 >
                   {availableCopies > 0
@@ -186,13 +184,10 @@ export default async function BookDetails({
 
               {/* Action Buttons */}
               <div className="flex flex-col gap-3 sm:flex-row">
-                <button
-                  disabled={availableCopies <= 0}
-                  className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-[#173F35] px-6 py-4 font-semibold text-white transition hover:bg-[#245B4C] disabled:cursor-not-allowed disabled:bg-gray-400"
-                >
-                  Borrow This Book
-                  <ArrowUpRight size={19} />
-                </button>
+                <BorrowButton
+                  bookId={book._id}
+                  availableCopies={availableCopies}
+                />
 
                 <Link
                   href="/all-books"
