@@ -28,9 +28,7 @@ export default function BookCard({ book }: { book: Book }) {
 
   return (
     <div className="group overflow-hidden rounded-2xl border border-[#e8e5da] bg-white shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-xl">
-
       <div className="relative flex h-64 items-center justify-center overflow-hidden bg-[#eeeee5]">
-
         {!imageError ? (
           <Image
             src={imageUrl}
@@ -66,13 +64,12 @@ export default function BookCard({ book }: { book: Book }) {
           {book.description}
         </p>
 
-         <Link href={`/all-books/${book._id}`}
+        <Link
+          href={`/all-books/${book._id}`}
           className="flex items-center justify-center gap-2 rounded-xl bg-[#173f35] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#245c4d]"
         >
           View Details
           <ArrowUpRight size={17} />
-
-         
         </Link>
       </div>
     </div>

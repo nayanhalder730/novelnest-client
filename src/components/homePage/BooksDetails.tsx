@@ -1,3 +1,4 @@
+
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -11,22 +12,22 @@ import {
   UserRound,
 } from "lucide-react";
 
+export const instant = false;
+
 interface Book {
   _id: string;
   title: string;
   author: string;
   category: string;
   description: string;
-  imageName?: string;
-  imageMimeType?: string;
   totalCopies?: number;
   availableCopies?: number;
   createdAt?: string;
 }
 
 interface BookResponse {
-  success?: boolean;
-  data?: Book;
+  success: boolean;
+  data: Book;
 }
 
 const API_URL = process.env.NEXT_PUBLIC_SERVER_SITE_URL;
@@ -42,7 +43,7 @@ export default async function BookDetails({
     throw new Error("Server URL is not configured");
   }
 
-  const res = await fetch(`${API_URL}/book/${slug}`, {
+  const res = await fetch(`${API_URL}/books/${slug}`, {
     cache: "no-store",
   });
 
@@ -51,16 +52,11 @@ export default async function BookDetails({
   }
 
   if (!res.ok) {
-    throw new Error("Failed to fetch book details");
+    throw new Error(`Failed to fetch book details: ${res.status}`);
   }
 
-  const result: Book | BookResponse = await res.json();
-
-  // Supports both { data: book } and direct book responses
-  const book =
-    "data" in result && result.data
-      ? result.data
-      : (result as Book);
+  const result: BookResponse = await res.json();
+  const book = result.data;
 
   if (!book?._id) {
     notFound();
@@ -82,8 +78,6 @@ export default async function BookDetails({
   return (
     <main className="min-h-screen bg-[#F8F6EF] px-4 py-10 md:px-8 md:py-16">
       <div className="mx-auto max-w-7xl">
-
-        {/* Back Button */}
         <Link
           href="/all-books"
           className="mb-8 inline-flex items-center gap-2 text-sm font-semibold text-[#173F35] transition hover:text-[#B18B43]"
@@ -92,7 +86,6 @@ export default async function BookDetails({
           Back to All Books
         </Link>
 
-        {/* Main Details */}
         <div className="overflow-hidden rounded-3xl border border-[#173F35]/10 bg-white shadow-sm">
           <div className="grid grid-cols-1 lg:grid-cols-2">
 
@@ -113,7 +106,6 @@ export default async function BookDetails({
 
             {/* Book Information */}
             <div className="flex flex-col justify-center p-6 md:p-12 lg:p-14">
-
               <div className="mb-5">
                 <span className="inline-flex rounded-full bg-[#D8B76A]/20 px-4 py-2 text-xs font-bold uppercase tracking-widest text-[#92702F]">
                   {book.category}
@@ -146,7 +138,6 @@ export default async function BookDetails({
 
               {/* Book Stats */}
               <div className="my-8 grid grid-cols-2 gap-4">
-
                 <div className="rounded-2xl bg-[#F8F6EF] p-4">
                   <div className="mb-2 flex items-center gap-2 text-[#B18B43]">
                     <Library size={20} />
@@ -154,7 +145,6 @@ export default async function BookDetails({
                       Total Copies
                     </span>
                   </div>
-
                   <p className="text-2xl font-bold text-[#173F35]">
                     {totalCopies}
                   </p>
@@ -167,12 +157,10 @@ export default async function BookDetails({
                       Available
                     </span>
                   </div>
-
                   <p className="text-2xl font-bold text-[#173F35]">
                     {availableCopies}
                   </p>
                 </div>
-
               </div>
 
               {/* Availability */}
@@ -220,7 +208,6 @@ export default async function BookDetails({
                 <CalendarDays size={17} className="text-[#B18B43]" />
                 Added to library: {formattedDate}
               </div>
-
             </div>
           </div>
         </div>

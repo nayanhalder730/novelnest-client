@@ -2,6 +2,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import {
   BookOpen,
   Upload,
@@ -12,6 +13,8 @@ import {
   AlignLeft,
   CheckCircle2,
   Loader2,
+  Library,
+  Hash,
 } from "lucide-react";
 
 import { authClient } from "@/lib/auth-client";
@@ -21,7 +24,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import Image from "next/image";
 
 const categories = [
   "Fiction",
@@ -40,7 +42,9 @@ export default function AddBookPage() {
 
   const user = session?.user ?? null;
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (
+    e: React.FormEvent<HTMLFormElement>
+  ) => {
     e.preventDefault();
 
     if (!user) {
@@ -51,26 +55,32 @@ export default function AddBookPage() {
     const form = e.currentTarget;
     const formData = new FormData(form);
 
+    const totalCopies = Number(formData.get("totalCopies"));
+
+    if (!Number.isInteger(totalCopies) || totalCopies < 1) {
+      toast.error("Total copies must be at least 1.");
+      return;
+    }
+
     try {
       setLoading(true);
 
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_SERVER_SITE_URL}/addBooks`,
+        `${process.env.NEXT_PUBLIC_SERVER_SITE_URL}/books`,
         {
           method: "POST",
           body: formData,
         }
       );
 
-     const data = await res.json();
+      const data = await res.json();
 
-if (!res.ok || !data.success) {
-  console.log("Backend Error:", data);
+      if (!res.ok || !data.success) {
+        console.log("Backend Error:", data);
+        throw new Error(data.message || "Failed to add book");
+      }
 
-  throw new Error(data.message || "Failed to add book");
-}
-
-toast.success("Book added successfully!");
+      toast.success("Book added successfully!");
 
       form.reset();
       setImageName("");
@@ -89,20 +99,36 @@ toast.success("Book added successfully!");
     }
   };
 
+  // Loading State
   if (isPending) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#f5f5ed]">
-        <Loader2 className="animate-spin text-[#153b32]" size={35} />
+        <Loader2
+          className="animate-spin text-[#153b32]"
+          size={35}
+        />
       </div>
     );
   }
 
+  // Authentication Check
   if (!user) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#f5f5ed]">
-        <p className="text-lg font-semibold text-[#153b32]">
-          Please login to add a book.
-        </p>
+      <div className="flex min-h-screen items-center justify-center bg-[#f5f5ed] px-4">
+        <div className="rounded-2xl border border-[#153b32]/10 bg-white p-10 text-center shadow-lg">
+          <BookOpen
+            size={42}
+            className="mx-auto mb-4 text-[#b18b43]"
+          />
+
+          <h2 className="text-xl font-bold text-[#153b32]">
+            Login Required
+          </h2>
+
+          <p className="mt-2 text-sm text-[#64756c]">
+            Please login to add a book to NovelNest.
+          </p>
+        </div>
       </div>
     );
   }
@@ -113,17 +139,17 @@ toast.success("Book added successfully!");
 
         {/* Form Header */}
         <div className="mb-9 text-center">
-          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#153b32] text-[#e0bd75] shadow-lg shadow-[#153b32]/15">
-            <div className="relative h-10 w-10 overflow-hidden rounded-xl shadow-sm transition duration-300 group-hover:scale-105 sm:h-12 sm:w-12">
-                        <Image
-                          src="/novelNestLogo.jpg"
-                          alt="NovelNest Logo"
-                          fill
-                          priority
-                          sizes="48px"
-                          className="object-cover"
-                        />
-                      </div>
+          <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-[#153b32] shadow-lg shadow-[#153b32]/15">
+            <div className="relative h-11 w-11 overflow-hidden rounded-xl">
+              <Image
+                src="/novelNestLogo.jpg"
+                alt="NovelNest Logo"
+                fill
+                priority
+                sizes="44px"
+                className="object-cover"
+              />
+            </div>
           </div>
 
           <h1 className="text-3xl font-bold tracking-tight text-[#153b32] sm:text-4xl">
@@ -140,13 +166,21 @@ toast.success("Book added successfully!");
 
           {/* Card Heading */}
           <div className="border-b border-white/10 bg-[#153b32] px-6 py-6 sm:px-9">
-            <h2 className="text-xl font-semibold text-white">
-              Book Information
-            </h2>
+            <div className="flex items-center gap-3">
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-white/10 text-[#e0bd75]">
+                <BookOpen size={23} />
+              </div>
 
-            <p className="mt-1 text-sm text-[#c1d2c8]">
-              Fill in the details below to add your book.
-            </p>
+              <div>
+                <h2 className="text-xl font-semibold text-white">
+                  Book Information
+                </h2>
+
+                <p className="mt-1 text-sm text-[#c1d2c8]">
+                  Fill in the details below to add your book.
+                </p>
+              </div>
+            </div>
           </div>
 
           <form
@@ -210,7 +244,7 @@ toast.success("Book added successfully!");
                 name="category"
                 defaultValue=""
                 required
-                className="h-12 w-full rounded-xl border border-[#dce5de] bg-[#fafbf8] px-4 text-sm text-[#153b32] outline-none focus:border-[#153b32] focus:ring-2 focus:ring-[#153b32]/10"
+                className="h-12 w-full rounded-xl border border-[#dce5de] bg-[#fafbf8] px-4 text-sm text-[#153b32] outline-none transition focus:border-[#153b32] focus:ring-2 focus:ring-[#153b32]/10"
               >
                 <option value="" disabled>
                   Select a category
@@ -222,6 +256,51 @@ toast.success("Book added successfully!");
                   </option>
                 ))}
               </select>
+            </div>
+
+            {/* Total Copies */}
+            <div className="rounded-2xl border border-[#dce5de] bg-[#fafbf8] p-5">
+              <div className="mb-4 flex items-center gap-3">
+                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#153b32]/10 text-[#153b32]">
+                  <Library size={21} />
+                </div>
+
+                <div>
+                  <Label
+                    htmlFor="totalCopies"
+                    className="text-base font-bold text-[#153b32]"
+                  >
+                    Total Copies
+                  </Label>
+
+                  <p className="mt-1 text-xs text-[#819087]">
+                    How many copies of this book do you have?
+                  </p>
+                </div>
+              </div>
+
+              <div className="relative">
+                <Hash
+                  size={18}
+                  className="absolute left-4 top-1/2 -translate-y-1/2 text-[#b18b43]"
+                />
+
+                <Input
+                  id="totalCopies"
+                  name="totalCopies"
+                  type="number"
+                  min={1}
+                  step={1}
+                  defaultValue={1}
+                  placeholder="Enter total copies"
+                  required
+                  className="h-12 rounded-xl border-[#dce5de] bg-white pl-11 text-lg font-semibold text-[#153b32]"
+                />
+              </div>
+
+              <p className="mt-2 text-xs text-[#819087]">
+                Minimum 1 copy is required.
+              </p>
             </div>
 
             {/* Book Image */}
@@ -346,7 +425,7 @@ toast.success("Book added successfully!");
             <Button
               type="submit"
               disabled={loading}
-              className="h-13 w-full rounded-xl bg-[#153b32] text-base font-semibold text-white shadow-lg shadow-[#153b32]/15 transition hover:bg-[#205344] disabled:opacity-60"
+              className="h-13 w-full rounded-xl bg-[#153b32] text-base font-semibold text-white shadow-lg shadow-[#153b32]/15 transition hover:bg-[#205344] disabled:cursor-not-allowed disabled:opacity-60"
             >
               {loading ? (
                 <>
