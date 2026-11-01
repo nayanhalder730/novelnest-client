@@ -1,16 +1,21 @@
+
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
   ArrowLeft,
-  ArrowUpRight,
   BookOpen,
   CalendarDays,
   CheckCircle2,
   Library,
   UserRound,
+  Pencil,
+  Trash2,
 } from "lucide-react";
 import BorrowButton from "../books/BorrowButton";
+import BookActions from "./BookAction";
+
+
 
 export const instant = false;
 
@@ -78,6 +83,8 @@ export default async function BookDetails({
   return (
     <main className="min-h-screen bg-[#F8F6EF] px-4 py-10 md:px-8 md:py-16">
       <div className="mx-auto max-w-7xl">
+
+        {/* Back Button */}
         <Link
           href="/all-books"
           className="mb-8 inline-flex items-center gap-2 text-sm font-semibold text-[#173F35] transition hover:text-[#B18B43]"
@@ -88,6 +95,7 @@ export default async function BookDetails({
 
         <div className="overflow-hidden rounded-3xl border border-[#173F35]/10 bg-white shadow-sm">
           <div className="grid grid-cols-1 lg:grid-cols-2">
+
             {/* Book Cover */}
             <div className="flex items-center justify-center bg-[#173F35] p-8 md:p-14">
               <div className="relative h-[380px] w-full max-w-[280px] overflow-hidden rounded-xl shadow-2xl md:h-[480px] md:max-w-[340px]">
@@ -105,20 +113,28 @@ export default async function BookDetails({
 
             {/* Book Information */}
             <div className="flex flex-col justify-center p-6 md:p-12 lg:p-14">
+
+              {/* Category */}
               <div className="mb-5">
                 <span className="inline-flex rounded-full bg-[#D8B76A]/20 px-4 py-2 text-xs font-bold uppercase tracking-widest text-[#92702F]">
                   {book.category}
                 </span>
               </div>
 
+              {/* Title */}
               <h1 className="text-3xl font-bold leading-tight text-[#173F35] md:text-5xl">
                 {book.title}
               </h1>
 
+              {/* Author */}
               <div className="mt-5 flex items-center gap-2 text-gray-600">
                 <UserRound size={19} className="text-[#B18B43]" />
+
                 <span className="text-base">
-                  By <strong className="text-[#173F35]">{book.author}</strong>
+                  By{" "}
+                  <strong className="text-[#173F35]">
+                    {book.author}
+                  </strong>
                 </span>
               </div>
 
@@ -138,25 +154,32 @@ export default async function BookDetails({
 
               {/* Book Stats */}
               <div className="my-8 grid grid-cols-2 gap-4">
+
+                {/* Total Copies */}
                 <div className="rounded-2xl bg-[#F8F6EF] p-4">
                   <div className="mb-2 flex items-center gap-2 text-[#B18B43]">
                     <Library size={20} />
+
                     <span className="text-xs font-semibold uppercase tracking-wide">
                       Total Copies
                     </span>
                   </div>
+
                   <p className="text-2xl font-bold text-[#173F35]">
                     {totalCopies}
                   </p>
                 </div>
 
+                {/* Available Copies */}
                 <div className="rounded-2xl bg-[#F8F6EF] p-4">
                   <div className="mb-2 flex items-center gap-2 text-[#B18B43]">
                     <CheckCircle2 size={20} />
+
                     <span className="text-xs font-semibold uppercase tracking-wide">
                       Available
                     </span>
                   </div>
+
                   <p className="text-2xl font-bold text-[#173F35]">
                     {availableCopies}
                   </p>
@@ -167,13 +190,17 @@ export default async function BookDetails({
               <div className="mb-6 flex items-center gap-3">
                 <span
                   className={`h-3 w-3 rounded-full ${
-                    availableCopies > 0 ? "bg-green-500" : "bg-red-500"
+                    availableCopies > 0
+                      ? "bg-green-500"
+                      : "bg-red-500"
                   }`}
                 />
 
                 <span
                   className={`text-sm font-semibold ${
-                    availableCopies > 0 ? "text-green-700" : "text-red-600"
+                    availableCopies > 0
+                      ? "text-green-700"
+                      : "text-red-600"
                   }`}
                 >
                   {availableCopies > 0
@@ -182,7 +209,7 @@ export default async function BookDetails({
                 </span>
               </div>
 
-              {/* Action Buttons */}
+              {/* Borrow and Explore Buttons */}
               <div className="flex flex-col gap-3 sm:flex-row">
                 <BorrowButton
                   bookId={book._id}
@@ -198,11 +225,19 @@ export default async function BookDetails({
                 </Link>
               </div>
 
+              {/* Update and Delete Buttons */}
+              <BookActions bookId={book._id} />
+
               {/* Added Date */}
               <div className="mt-8 flex items-center gap-2 border-t border-gray-200 pt-5 text-sm text-gray-500">
-                <CalendarDays size={17} className="text-[#B18B43]" />
+                <CalendarDays
+                  size={17}
+                  className="text-[#B18B43]"
+                />
+
                 Added to library: {formattedDate}
               </div>
+
             </div>
           </div>
         </div>
