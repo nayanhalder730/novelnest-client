@@ -44,7 +44,7 @@ const publicLinks = [
 
 const privateLinks = [
   { name: "Add Book", href: "/add-book", icon: BookPlus },
-  { name: "My Collection", href: "/my-books", icon: Library },
+  { name: "My Collection", href: "/my-collection", icon: Library },
   { name: "My Borrows", href: "/my-borrows", icon: Bookmark },
 ];
 
