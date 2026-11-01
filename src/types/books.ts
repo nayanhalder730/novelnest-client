@@ -5,13 +5,15 @@ export interface CollectionBook {
   category: string;
   description: string;
   createdAt: string;
-
-  // Collection specific properties
   totalCopies: number;
   availableCopies: number;
   userEmail: string;
   userName?: string;
-
   imageName?: string;
   imageMimeType?: string;
+}
+
+export interface CollectionBooksResponse {
+  success: boolean;
+  data: CollectionBook[];
 }
