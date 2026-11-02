@@ -109,7 +109,7 @@ export default function SignInPage() {
 
             <div className="mt-10 rounded-2xl border border-white/10 bg-white/5 p-6">
               <p className="text-lg font-medium italic text-[#E9D8A9]">
-                "A reader lives a thousand lives before he dies."
+                &quot;A reader lives a thousand lives before he dies.&quot;
               </p>
 
               <p className="mt-3 text-sm text-white/50">

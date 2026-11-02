@@ -14,10 +14,13 @@ interface BookActionsProps {
 
 export default function BookActions({ bookId }: BookActionsProps) {
   const router = useRouter();
+
   const [deleting, setDeleting] = useState(false);
   const [message, setMessage] = useState("");
 
   const handleDelete = async () => {
+    if (deleting) return;
+
     const confirmed = window.confirm(
       "Are you sure you want to delete this book?"
     );
@@ -35,12 +38,15 @@ export default function BookActions({ bookId }: BookActionsProps) {
 
       const response = await fetch(`${API_URL}/books/${bookId}`, {
         method: "DELETE",
+        credentials: "include",
       });
 
       const result = await response.json();
 
-      if (!response.ok) {
-        throw new Error(result.message || "Failed to delete book.");
+      if (!response.ok || !result.success) {
+        throw new Error(
+          result.message || "Failed to delete book."
+        );
       }
 
       router.push("/all-books");
@@ -79,7 +85,10 @@ export default function BookActions({ bookId }: BookActionsProps) {
       </div>
 
       {message && (
-        <p className="mt-3 text-sm font-medium text-red-600">
+        <p
+          role="alert"
+          className="mt-3 text-sm font-medium text-red-600"
+        >
           {message}
         </p>
       )}

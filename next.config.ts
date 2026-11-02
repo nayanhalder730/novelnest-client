@@ -1,12 +1,14 @@
+
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
   experimental: {
     agentFeedback: true,
   },
+
   cacheComponents: true,
   partialPrefetching: true,
+
   turbopack: {
     rules: {
       "*.css": {
@@ -15,6 +17,19 @@ const nextConfig: NextConfig = {
       },
     },
   },
+
+  async rewrites() {
+    const backendURL =
+      process.env.BACKEND_URL || "http://localhost:8000";
+
+    return [
+      {
+        source: "/backend/:path*",
+        destination: `${backendURL}/:path*`,
+      },
+    ];
+  },
 };
 
 export default nextConfig;
+

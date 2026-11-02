@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useState } from "react";
@@ -55,17 +56,16 @@ export default function Navbar() {
   const { data: session, isPending } = authClient.useSession();
   const user = session?.user ?? null;
 
-  const [darkMode, setDarkMode] = useState(false);
+  const [darkMode, setDarkMode] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return localStorage.getItem("theme") === "dark";
+  });
   const [mobileOpen, setMobileOpen] = useState(false);
 
   // Load saved theme
   useEffect(() => {
-    const savedTheme = localStorage.getItem("theme");
-    const isDark = savedTheme === "dark";
-
-    setDarkMode(isDark);
-    document.documentElement.classList.toggle("dark", isDark);
-  }, []);
+    document.documentElement.classList.toggle("dark", darkMode);
+  }, [darkMode]);
 
   // Toggle theme
   const toggleTheme = () => {
@@ -94,12 +94,14 @@ export default function Navbar() {
         return;
       }
 
+      setMobileOpen(false);
+
       toast.success("Logged out successfully!");
 
-      setMobileOpen(false);
-      router.push("/");
+      router.replace("/");
       router.refresh();
-    } catch {
+    } catch (error) {
+      console.error("Logout error:", error);
       toast.error("Something went wrong. Please try again.");
     }
   };

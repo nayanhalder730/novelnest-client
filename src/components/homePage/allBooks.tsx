@@ -1,3 +1,4 @@
+
 import BookCard, {
   type Book,
 } from "@/components/homePage/BookCard";
@@ -5,23 +6,46 @@ import BookCard, {
 interface BooksResponse {
   success: boolean;
   count: number;
-  data: Book[];
+  books: Book[];
+  message?: string;
 }
 
+const API_URL =
+  process.env.BACKEND_URL || "http://localhost:8000";
+
 export default async function AllBooks() {
-  const res = await fetch(
-    `${process.env.NEXT_PUBLIC_SERVER_SITE_URL}/allBooks`,
-    {
+  let cardData: Book[] = [];
+
+  try {
+    const res = await fetch(`${API_URL}/allBooks`, {
+      method: "GET",
       cache: "no-store",
+    });
+
+    if (!res.ok) {
+      throw new Error(`Failed to fetch books: ${res.status}`);
     }
-  );
 
-  if (!res.ok) {
-    throw new Error("Failed to fetch books");
+    const result: BooksResponse = await res.json();
+
+    if (!result.success || !Array.isArray(result.books)) {
+      throw new Error(
+        result.message || "Invalid books response from server."
+      );
+    }
+
+    cardData = result.books.filter(
+      (book) => book && book._id
+    );
+  } catch (error) {
+    console.error("All Books Error:", error);
+
+    throw new Error(
+      error instanceof Error
+        ? error.message
+        : "Failed to load books."
+    );
   }
-
-  const result: BooksResponse = await res.json();
-  const cardData = result.data;
 
   return (
     <section className="min-h-screen bg-[#F8F6EF] px-4 py-12 md:px-8">

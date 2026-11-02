@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState } from "react";
@@ -25,13 +24,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 
-const categories = [
-  "Fiction",
-  "Science",
-  "History",
-  "Kids",
-  "Others",
-];
+const categories = ["Fiction", "Science", "History", "Kids", "Others"];
 
 export default function AddBookPage() {
   const [imageName, setImageName] = useState("");
@@ -42,9 +35,7 @@ export default function AddBookPage() {
 
   const user = session?.user ?? null;
 
-  const handleSubmit = async (
-    e: React.FormEvent<HTMLFormElement>
-  ) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     if (!user) {
@@ -70,7 +61,8 @@ export default function AddBookPage() {
         {
           method: "POST",
           body: formData,
-        }
+          credentials: "include",
+        },
       );
 
       const data = await res.json();
@@ -84,16 +76,12 @@ export default function AddBookPage() {
 
       form.reset();
       setImageName("");
-
     } catch (error) {
       console.error("Add Book Error:", error);
 
       toast.error(
-        error instanceof Error
-          ? error.message
-          : "Something went wrong!"
+        error instanceof Error ? error.message : "Something went wrong!",
       );
-
     } finally {
       setLoading(false);
     }
@@ -103,10 +91,7 @@ export default function AddBookPage() {
   if (isPending) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#f5f5ed]">
-        <Loader2
-          className="animate-spin text-[#153b32]"
-          size={35}
-        />
+        <Loader2 className="animate-spin text-[#153b32]" size={35} />
       </div>
     );
   }
@@ -116,14 +101,9 @@ export default function AddBookPage() {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#f5f5ed] px-4">
         <div className="rounded-2xl border border-[#153b32]/10 bg-white p-10 text-center shadow-lg">
-          <BookOpen
-            size={42}
-            className="mx-auto mb-4 text-[#b18b43]"
-          />
+          <BookOpen size={42} className="mx-auto mb-4 text-[#b18b43]" />
 
-          <h2 className="text-xl font-bold text-[#153b32]">
-            Login Required
-          </h2>
+          <h2 className="text-xl font-bold text-[#153b32]">Login Required</h2>
 
           <p className="mt-2 text-sm text-[#64756c]">
             Please login to add a book to NovelNest.
@@ -136,7 +116,6 @@ export default function AddBookPage() {
   return (
     <main className="min-h-screen bg-[#f5f5ed] px-4 py-12 sm:px-6 lg:py-16">
       <div className="mx-auto max-w-3xl">
-
         {/* Form Header */}
         <div className="mb-9 text-center">
           <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-[#153b32] shadow-lg shadow-[#153b32]/15">
@@ -163,7 +142,6 @@ export default function AddBookPage() {
 
         {/* Form Card */}
         <div className="overflow-hidden rounded-3xl border border-[#153b32]/10 bg-white shadow-xl shadow-[#153b32]/5">
-
           {/* Card Heading */}
           <div className="border-b border-white/10 bg-[#153b32] px-6 py-6 sm:px-9">
             <div className="flex items-center gap-3">
@@ -183,14 +161,9 @@ export default function AddBookPage() {
             </div>
           </div>
 
-          <form
-            onSubmit={handleSubmit}
-            className="space-y-7 p-6 sm:p-9"
-          >
-
+          <form onSubmit={handleSubmit} className="space-y-7 p-6 sm:p-9">
             {/* Book Title & Author */}
             <div className="grid gap-6 sm:grid-cols-2">
-
               <div className="space-y-2.5">
                 <Label
                   htmlFor="title"
@@ -226,7 +199,6 @@ export default function AddBookPage() {
                   className="h-12 rounded-xl border-[#dce5de] bg-[#fafbf8] px-4 text-[#153b32]"
                 />
               </div>
-
             </div>
 
             {/* Category */}
@@ -325,9 +297,7 @@ export default function AddBookPage() {
                   {imageName || "Click to upload book cover"}
                 </p>
 
-                <p className="mt-2 text-xs text-[#819087]">
-                  PNG, JPG or WEBP
-                </p>
+                <p className="mt-2 text-xs text-[#819087]">PNG, JPG or WEBP</p>
 
                 <Input
                   id="image"
@@ -378,7 +348,6 @@ export default function AddBookPage() {
               </div>
 
               <div className="grid gap-6 sm:grid-cols-2">
-
                 {/* User Name */}
                 <div className="space-y-2.5">
                   <Label
@@ -417,7 +386,6 @@ export default function AddBookPage() {
                     className="h-12 rounded-xl border-[#dce5de] bg-gray-100 px-4 text-[#153b32]"
                   />
                 </div>
-
               </div>
             </div>
 
@@ -444,7 +412,6 @@ export default function AddBookPage() {
               <CheckCircle2 size={14} className="text-[#b18b43]" />
               Share your knowledge with the NovelNest community.
             </p>
-
           </form>
         </div>
       </div>

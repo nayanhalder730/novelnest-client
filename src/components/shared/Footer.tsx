@@ -1,11 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+
 import Link from "next/link";
 import {
   ArrowUp,
   ArrowUpRight,
-  BookOpen,
   Mail,
   MapPin,
   Phone,
@@ -17,18 +16,18 @@ import Image from "next/image";
 
 const quickLinks = [
   { name: "Home", href: "/" },
-  { name: "Explore Books", href: "/books" },
+  { name: "Explore Books", href: "/all-books" },
   { name: "Add a Book", href: "/add-book" },
-  { name: "My Books", href: "/my-books" },
+  { name: "My Books", href: "/my-collection" },
   { name: "My Borrows", href: "/my-borrows" },
 ];
 
 const genreLinks = [
-  { name: "Fiction", href: "/books?genre=fiction" },
-  { name: "Science", href: "/books?genre=science" },
-  { name: "Technology", href: "/books?genre=technology" },
-  { name: "History", href: "/books?genre=history" },
-  { name: "Mystery", href: "/books?genre=mystery" },
+  { name: "Fiction", href: "/all-books?category=Fiction" },
+  { name: "Science", href: "/all-books?category=Science" },
+  { name: "Technology", href: "/all-books?category=Science" },
+  { name: "History", href: "/all-books?category=History" },
+  { name: "Mystery", href: "/all-books?category=Others" },
 ];
 
 const socialLinks = [
@@ -38,11 +37,7 @@ const socialLinks = [
 ];
 
 export default function Footer() {
-  const [currentYear, setCurrentYear] = useState(2026);
-
-  useEffect(() => {
-    setCurrentYear(new Date().getFullYear());
-  }, []);
+  const currentYear = 2026;
 
   return (
     <footer className="relative overflow-hidden bg-[#102e2b] text-white">

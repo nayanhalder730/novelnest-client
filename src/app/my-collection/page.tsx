@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 
 import {
@@ -30,66 +30,71 @@ export default function MyCollectionPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  const userEmail = session?.user?.email?.toLowerCase();
+  const userEmail = session?.user?.email?.toLowerCase() ?? "";
 
-  useEffect(() => {
-    if (isPending) return;
-
+  // Fetch only the authenticated user's books
+  const fetchMyBooks = useCallback(async () => {
     if (!userEmail) {
       setBooks([]);
       setLoading(false);
       return;
     }
 
-    const fetchMyBooks = async () => {
-      try {
-        setLoading(true);
-        setError("");
+    if (!API_URL) {
+      setError(
+        "Server API URL is missing. Check your .env.local file."
+      );
+      setLoading(false);
+      return;
+    }
 
-        if (!API_URL) {
-          throw new Error(
-            "Server API URL is missing. Check your .env.local file."
-          );
-        }
+    try {
+      setLoading(true);
+      setError("");
 
-        const response = await fetch(`${API_URL}/books`, {
-          method: "GET",
-          cache: "no-store",
-        });
+      const response = await fetch(`${API_URL}/my-books`, {
+        method: "GET",
+        credentials: "include",
+        cache: "no-store",
+      });
 
-        if (!response.ok) {
-          throw new Error(`API Error: ${response.status}`);
-        }
+      const result: CollectionBooksResponse =
+        await response.json();
 
-        const result: CollectionBooksResponse =
-          await response.json();
-
-        const myBooks = (result.data ?? []).filter(
-          (book) =>
-            book &&
-            book._id &&
-            book.userEmail?.toLowerCase() === userEmail
+      if (!response.ok || !result.success) {
+        throw new Error(
+          result.message || `API Error: ${response.status}`
         );
-
-        setBooks(myBooks);
-
-      } catch (err) {
-        console.error("My Collection Error:", err);
-
-        setError(
-          err instanceof Error
-            ? err.message
-            : "Unable to load your collection."
-        );
-
-      } finally {
-        setLoading(false);
       }
-    };
 
-    fetchMyBooks();
+      setBooks(
+        Array.isArray(result.books)
+          ? result.books.filter((book) => book && book._id)
+          : []
+      );
+    } catch (err) {
+      console.error("My Collection Error:", err);
 
-  }, [userEmail, isPending]);
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Unable to load your collection."
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, [userEmail]);
+
+  useEffect(() => {
+    if (isPending) return;
+
+    if (!userEmail) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(fetchMyBooks, 0);
+    return () => window.clearTimeout(timeoutId);
+  }, [isPending, userEmail, fetchMyBooks]);
 
   // Summary calculations
   const totalBooks = books.length;
@@ -107,7 +112,7 @@ export default function MyCollectionPage() {
   );
 
   // Loading State
-  if (isPending || loading) {
+  if (isPending || (userEmail && loading)) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
         <div className="text-center">
@@ -255,6 +260,13 @@ export default function MyCollectionPage() {
 
             <p>{error}</p>
 
+            <button
+              onClick={fetchMyBooks}
+              className="ml-auto font-semibold underline"
+            >
+              Retry
+            </button>
+
           </div>
         )}
 
@@ -287,31 +299,33 @@ export default function MyCollectionPage() {
 
         ) : (
 
-          <div className="rounded-2xl border border-dashed border-[#173F35]/20 bg-white px-6 py-16 text-center">
+          !error && (
+            <div className="rounded-2xl border border-dashed border-[#173F35]/20 bg-white px-6 py-16 text-center">
 
-            <BookOpen
-              size={55}
-              className="mx-auto mb-5 text-[#B18B43]"
-            />
+              <BookOpen
+                size={55}
+                className="mx-auto mb-5 text-[#B18B43]"
+              />
 
-            <h3 className="text-2xl font-bold text-[#173F35]">
-              Your Collection is Empty
-            </h3>
+              <h3 className="text-2xl font-bold text-[#173F35]">
+                Your Collection is Empty
+              </h3>
 
-            <p className="mx-auto mt-3 max-w-md text-gray-500">
-              You haven't added any books yet. Start building your
-              personal library by adding your first book.
-            </p>
+              <p className="mx-auto mt-3 max-w-md text-gray-500">
+                You haven&apos;t added any books yet. Start building your
+                personal library by adding your first book.
+              </p>
 
-            <Link
-              href="/add-book"
-              className="mt-7 inline-flex items-center gap-2 rounded-xl bg-[#173F35] px-6 py-3 font-bold text-white transition hover:bg-[#B18B43] hover:text-[#173F35]"
-            >
-              <Plus size={20} />
-              Add Your First Book
-            </Link>
+              <Link
+                href="/add-book"
+                className="mt-7 inline-flex items-center gap-2 rounded-xl bg-[#173F35] px-6 py-3 font-bold text-white transition hover:bg-[#B18B43] hover:text-[#173F35]"
+              >
+                <Plus size={20} />
+                Add Your First Book
+              </Link>
 
-          </div>
+            </div>
+          )
 
         )}
 

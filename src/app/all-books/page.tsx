@@ -9,7 +9,7 @@ export const instant = false;
 interface BooksResponse {
   success: boolean;
   count: number;
-  data: Book[];
+  books: Book[];
 }
 
 interface AllBooksPageProps {
@@ -18,8 +18,7 @@ interface AllBooksPageProps {
   }>;
 }
 
-const API_URL = process.env.NEXT_PUBLIC_SERVER_SITE_URL;
-
+const API_URL =process.env.BACKEND_URL || "http://localhost:8000";
 const allowedCategories = [
   "Fiction",
   "Science",
@@ -48,7 +47,7 @@ export default async function AllBooksPage({
 
   const result: BooksResponse = await res.json();
 
-  const cardData = result.data || [];
+  const cardData = result.books || [];
 
   // Validate selected category
   const selectedCategory =

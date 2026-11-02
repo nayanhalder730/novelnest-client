@@ -2,6 +2,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { headers } from "next/headers";
 import {
   ArrowLeft,
   BookOpen,
@@ -9,18 +10,17 @@ import {
   CheckCircle2,
   Library,
   UserRound,
-  Pencil,
-  Trash2,
 } from "lucide-react";
+
 import BorrowButton from "../books/BorrowButton";
 import BookActions from "./BookAction";
+import { auth } from "@/lib/auth";
 
-
-
-export const instant = false;
+export const dynamic = "force-dynamic";
 
 interface Book {
   _id: string;
+  userId?: string;
   title: string;
   author: string;
   category: string;
@@ -32,10 +32,12 @@ interface Book {
 
 interface BookResponse {
   success: boolean;
-  data: Book;
+  book?: Book;
+  message?: string;
 }
 
-const API_URL = process.env.NEXT_PUBLIC_SERVER_SITE_URL;
+const API_URL =
+  process.env.BACKEND_URL || "http://localhost:8000";
 
 export default async function BookDetails({
   params,
@@ -43,47 +45,75 @@ export default async function BookDetails({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-
-  if (!API_URL) {
-    throw new Error("Server URL is not configured");
-  }
-
-  const res = await fetch(`${API_URL}/books/${slug}`, {
-    cache: "no-store",
+  const session = await auth.api.getSession({
+    headers: await headers(),
   });
 
-  if (res.status === 404) {
+  if (!slug) {
     notFound();
   }
 
-  if (!res.ok) {
-    throw new Error(`Failed to fetch book details: ${res.status}`);
+  let result: BookResponse;
+
+  try {
+    const res = await fetch(`${API_URL}/books/${slug}`, {
+      method: "GET",
+      cache: "no-store",
+    });
+
+    if (res.status === 404) {
+      notFound();
+    }
+
+    if (!res.ok) {
+      throw new Error(
+        `Failed to fetch book details: ${res.status}`
+      );
+    }
+
+    result = await res.json();
+  } catch (error) {
+    console.error("Book Details Fetch Error:", error);
+    throw new Error("Unable to load book details.");
   }
 
-  const result: BookResponse = await res.json();
-  const book = result.data;
-
-  if (!book?._id) {
+  if (!result.success || !result.book?._id) {
     notFound();
   }
+
+  const book = result.book;
+  const isOwner =
+    Boolean(book.userId) &&
+    session?.user?.id === String(book.userId);
 
   const imageUrl = `${API_URL}/book-image/${book._id}`;
 
-  const availableCopies = book.availableCopies ?? 0;
-  const totalCopies = book.totalCopies ?? 0;
+  const availableCopies = Math.max(
+    0,
+    book.availableCopies ?? 0
+  );
 
-  const formattedDate = book.createdAt
-    ? new Date(book.createdAt).toLocaleDateString("en-US", {
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-      })
-    : "Not available";
+  const totalCopies = Math.max(
+    0,
+    book.totalCopies ?? 0
+  );
+
+  const parsedDate = book.createdAt
+    ? new Date(book.createdAt)
+    : null;
+
+  const formattedDate =
+    parsedDate && !Number.isNaN(parsedDate.getTime())
+      ? parsedDate.toLocaleDateString("en-US", {
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+        })
+      : "Not available";
 
   return (
     <main className="min-h-screen bg-[#F8F6EF] px-4 py-10 md:px-8 md:py-16">
       <div className="mx-auto max-w-7xl">
-
         {/* Back Button */}
         <Link
           href="/all-books"
@@ -95,7 +125,6 @@ export default async function BookDetails({
 
         <div className="overflow-hidden rounded-3xl border border-[#173F35]/10 bg-white shadow-sm">
           <div className="grid grid-cols-1 lg:grid-cols-2">
-
             {/* Book Cover */}
             <div className="flex items-center justify-center bg-[#173F35] p-8 md:p-14">
               <div className="relative h-[380px] w-full max-w-[280px] overflow-hidden rounded-xl shadow-2xl md:h-[480px] md:max-w-[340px]">
@@ -113,7 +142,6 @@ export default async function BookDetails({
 
             {/* Book Information */}
             <div className="flex flex-col justify-center p-6 md:p-12 lg:p-14">
-
               {/* Category */}
               <div className="mb-5">
                 <span className="inline-flex rounded-full bg-[#D8B76A]/20 px-4 py-2 text-xs font-bold uppercase tracking-widest text-[#92702F]">
@@ -128,7 +156,10 @@ export default async function BookDetails({
 
               {/* Author */}
               <div className="mt-5 flex items-center gap-2 text-gray-600">
-                <UserRound size={19} className="text-[#B18B43]" />
+                <UserRound
+                  size={19}
+                  className="text-[#B18B43]"
+                />
 
                 <span className="text-base">
                   By{" "}
@@ -154,7 +185,6 @@ export default async function BookDetails({
 
               {/* Book Stats */}
               <div className="my-8 grid grid-cols-2 gap-4">
-
                 {/* Total Copies */}
                 <div className="rounded-2xl bg-[#F8F6EF] p-4">
                   <div className="mb-2 flex items-center gap-2 text-[#B18B43]">
@@ -226,7 +256,7 @@ export default async function BookDetails({
               </div>
 
               {/* Update and Delete Buttons */}
-              <BookActions bookId={book._id} />
+              {isOwner && <BookActions bookId={book._id} />}
 
               {/* Added Date */}
               <div className="mt-8 flex items-center gap-2 border-t border-gray-200 pt-5 text-sm text-gray-500">
@@ -237,7 +267,6 @@ export default async function BookDetails({
 
                 Added to library: {formattedDate}
               </div>
-
             </div>
           </div>
         </div>

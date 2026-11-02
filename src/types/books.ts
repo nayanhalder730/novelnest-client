@@ -15,5 +15,7 @@ export interface CollectionBook {
 
 export interface CollectionBooksResponse {
   success: boolean;
-  data: CollectionBook[];
+  count: number;
+  books: CollectionBook[];
+  message?: string;
 }

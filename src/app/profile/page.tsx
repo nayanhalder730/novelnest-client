@@ -1,6 +1,7 @@
+
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
@@ -30,6 +31,8 @@ export default function ProfilePage() {
   const { data: session, isPending } = authClient.useSession();
   const user = session?.user;
 
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+
   // Redirect logged-out users
   useEffect(() => {
     if (!isPending && !user) {
@@ -39,7 +42,11 @@ export default function ProfilePage() {
 
   // Logout
   const handleLogout = async () => {
+    if (isLoggingOut) return;
+
     try {
+      setIsLoggingOut(true);
+
       const { error } = await authClient.signOut();
 
       if (error) {
@@ -48,10 +55,13 @@ export default function ProfilePage() {
       }
 
       toast.success("Logged out successfully!");
-      router.push("/");
+
+      router.replace("/");
       router.refresh();
     } catch {
       toast.error("Something went wrong. Please try again.");
+    } finally {
+      setIsLoggingOut(false);
     }
   };
 
@@ -61,6 +71,7 @@ export default function ProfilePage() {
       <main className="flex min-h-screen items-center justify-center bg-[#F8F6EF] dark:bg-[#101b1b]">
         <div className="text-center">
           <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-[#087f75]/20 border-t-[#087f75]" />
+
           <p className="mt-4 font-medium text-[#087f75]">
             Loading your profile...
           </p>
@@ -210,10 +221,11 @@ export default function ProfilePage() {
 
               <Button
                 onClick={handleLogout}
-                className="rounded-xl bg-red-600 px-6 py-3 text-white hover:bg-red-700"
+                disabled={isLoggingOut}
+                className="rounded-xl bg-red-600 px-6 py-3 text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 <LogOut className="mr-2 h-4 w-4" />
-                Logout
+                {isLoggingOut ? "Logging out..." : "Logout"}
               </Button>
             </div>
           </div>

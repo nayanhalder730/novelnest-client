@@ -20,8 +20,10 @@ export function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/all-books/:path*",
+    "/add-book/:path*",
+    "/profile/:path*",
     "/my-collection/:path*",
     "/my-borrows/:path*",
+    "/all-books/:slug/edit",
   ],
 };

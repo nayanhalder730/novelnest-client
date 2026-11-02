@@ -20,7 +20,7 @@ const API_URL = process.env.NEXT_PUBLIC_SERVER_SITE_URL;
 interface BorrowsResponse {
   success: boolean;
   count: number;
-  data: Borrow[];
+  borrows: Borrow[];
   message?: string;
 }
 
@@ -33,7 +33,7 @@ export default function MyBorrowsPage() {
 
   const userEmail = session?.user?.email?.toLowerCase() ?? "";
 
-  // Fetch current user's borrow records
+  // Fetch current logged-in user's borrow records
   const fetchBorrows = useCallback(async () => {
     if (!userEmail) {
       setBorrows([]);
@@ -42,7 +42,9 @@ export default function MyBorrowsPage() {
     }
 
     if (!API_URL) {
-      setError("Server URL is missing. Please check your environment variables.");
+      setError(
+        "Server URL is missing. Please check your environment variables."
+      );
       setLoading(false);
       return;
     }
@@ -53,9 +55,7 @@ export default function MyBorrowsPage() {
 
       const response = await fetch(`${API_URL}/borrows`, {
         method: "GET",
-        headers: {
-          "x-user-email": session?.user?.email ?? "",
-        },
+        credentials: "include",
         cache: "no-store",
       });
 
@@ -68,12 +68,8 @@ export default function MyBorrowsPage() {
         );
       }
 
-      const myBorrows = (result.data ?? []).filter(
-        (borrow) =>
-          borrow.userEmail?.toLowerCase() === userEmail
-      );
-
-      setBorrows(myBorrows);
+      // Backend should return only the authenticated user's records.
+      setBorrows(result.borrows ?? []);
     } catch (err) {
       console.error("My Borrows Error:", err);
 
@@ -85,20 +81,18 @@ export default function MyBorrowsPage() {
     } finally {
       setLoading(false);
     }
-  }, [session]);
+  }, [userEmail]);
 
   // Fetch data after session loading
   useEffect(() => {
     if (isPending) return;
 
     if (!userEmail) {
-      setBorrows([]);
-      setError("");
-      setLoading(false);
       return;
     }
 
-    fetchBorrows();
+    const timeoutId = window.setTimeout(fetchBorrows, 0);
+    return () => window.clearTimeout(timeoutId);
   }, [isPending, userEmail, fetchBorrows]);
 
   // Update UI after successfully returning a book
@@ -126,7 +120,7 @@ export default function MyBorrowsPage() {
   ).length;
 
   // Loading state
-  if (isPending || loading) {
+  if (isPending || (userEmail && loading)) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
         <div className="text-center">
@@ -281,7 +275,7 @@ export default function MyBorrowsPage() {
               </h3>
 
               <p className="mx-auto mt-3 max-w-md text-gray-500">
-                You haven't borrowed any books yet. Explore our
+                You haven&apos;t borrowed any books yet. Explore our
                 library and find your next favorite book.
               </p>
 

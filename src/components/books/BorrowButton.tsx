@@ -26,77 +26,77 @@ export default function BorrowButton({
   const [message, setMessage] = useState("");
   const [isError, setIsError] = useState(false);
 
+  const handleBorrow = async () => {
+    if (isPending || borrowing) return;
 
-const handleBorrow = async () => {
-  const userEmail = session?.user?.email;
-
-  if (isPending) return;
-
-  if (!userEmail) {
-    router.push("/sign-in");
-    return;
-  }
-
-  if (availableCopies <= 0) {
-    setMessage("This book is currently unavailable.");
-    setIsError(true);
-    return;
-  }
-
-  if (!API_URL) {
-    setMessage("Server URL is not configured.");
-    setIsError(true);
-    return;
-  }
-
-  try {
-    setBorrowing(true);
-    setMessage("");
-    setIsError(false);
-
-    const response = await fetch(`${API_URL}/borrows`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-user-email": userEmail,
-      },
-      body: JSON.stringify({
-        bookId,
-      }),
-    });
-
-    const result = await response.json();
-
-    if (!response.ok) {
-      throw new Error(
-        result.message || `Borrow failed: ${response.status}`
-      );
+    if (!session?.user) {
+      router.push("/sign-in");
+      return;
     }
 
-    setMessage("Book borrowed successfully!");
-    setIsError(false);
+    if (availableCopies <= 0) {
+      setMessage("This book is currently unavailable.");
+      setIsError(true);
+      return;
+    }
 
-    // Refresh book details and available copies
-    router.refresh();
-  } catch (error) {
-    setMessage(
-      error instanceof Error
-        ? error.message
-        : "Something went wrong. Please try again."
-    );
+    if (!API_URL) {
+      setMessage("Server URL is not configured.");
+      setIsError(true);
+      return;
+    }
 
-    setIsError(true);
-  } finally {
-    setBorrowing(false);
-  }
-};
+    try {
+      setBorrowing(true);
+      setMessage("");
+      setIsError(false);
 
+      const response = await fetch(`${API_URL}/borrows`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({
+          bookId,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        throw new Error(
+          result.message || `Borrow failed: ${response.status}`
+        );
+      }
+
+      setMessage("Book borrowed successfully!");
+      setIsError(false);
+
+      // Refresh book details and available copies
+      router.refresh();
+    } catch (error) {
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : "Something went wrong. Please try again."
+      );
+
+      setIsError(true);
+    } finally {
+      setBorrowing(false);
+    }
+  };
 
   return (
     <div className="flex-1">
       <button
         onClick={handleBorrow}
-        disabled={borrowing || availableCopies <= 0 || isPending}
+        disabled={
+          borrowing ||
+          availableCopies <= 0 ||
+          isPending
+        }
         className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#173F35] px-6 py-4 font-semibold text-white transition hover:bg-[#245B4C] disabled:cursor-not-allowed disabled:bg-gray-400"
       >
         {borrowing ? (
@@ -115,6 +115,7 @@ const handleBorrow = async () => {
       {message && (
         <p
           role="status"
+          aria-live="polite"
           className={`mt-3 text-sm font-medium ${
             isError ? "text-red-600" : "text-green-700"
           }`}
@@ -123,7 +124,7 @@ const handleBorrow = async () => {
         </p>
       )}
 
-      {!session?.user?.email && !isPending && (
+      {!session?.user && !isPending && (
         <Link
           href="/sign-in"
           className="mt-2 block text-center text-xs text-gray-500 underline"

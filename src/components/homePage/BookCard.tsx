@@ -1,3 +1,4 @@
+
 "use client";
 
 import Image from "next/image";
@@ -23,16 +24,19 @@ const API_URL = process.env.NEXT_PUBLIC_SERVER_SITE_URL;
 export default function BookCard({ book }: { book: Book }) {
   const [imageError, setImageError] = useState(false);
 
-  const imageUrl = `${API_URL}/book-image/${book._id}`;
+  const imageUrl =
+    API_URL && book._id
+      ? `${API_URL}/book-image/${book._id}`
+      : "";
 
   return (
     <div className="group overflow-hidden rounded-2xl border border-[#e8e5da] bg-white shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-xl">
       {/* Book Image */}
       <div className="relative flex h-64 items-center justify-center overflow-hidden bg-[#eeeee5]">
-        {!imageError && API_URL ? (
+        {!imageError && imageUrl ? (
           <Image
             src={imageUrl}
-            alt={book.title}
+            alt={book.title || "Book cover"}
             fill
             unoptimized
             onError={() => setImageError(true)}

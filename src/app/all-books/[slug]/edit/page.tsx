@@ -15,13 +15,7 @@ import {
 
 const API_URL = process.env.NEXT_PUBLIC_SERVER_SITE_URL;
 
-const categories = [
-  "Fiction",
-  "Science",
-  "History",
-  "Kids",
-  "Others",
-];
+const categories = ["Fiction", "Science", "History", "Kids", "Others"];
 
 interface Book {
   _id: string;
@@ -35,7 +29,7 @@ interface Book {
 
 interface BookResponse {
   success: boolean;
-  data: Book;
+  book: Book;
   message?: string;
 }
 
@@ -47,7 +41,6 @@ export default function EditPage({ params }: EditPageProps) {
   const router = useRouter();
 
   const [bookId, setBookId] = useState("");
-
   const [book, setBook] = useState<Book | null>(null);
 
   const [title, setTitle] = useState("");
@@ -83,20 +76,20 @@ export default function EditPage({ params }: EditPageProps) {
 
         setBookId(slug);
 
-        const response = await fetch(
-          `${API_URL}/books/${slug}`,
-          { cache: "no-store" }
-        );
+        const response = await fetch(`${API_URL}/books/${slug}`, {
+          cache: "no-store",
+          credentials: "include",
+        });
 
         const result: BookResponse = await response.json();
 
-        if (!response.ok || !result.data?._id) {
+        if (!response.ok || !result.book?._id) {
           throw new Error(result.message || "Book not found.");
         }
 
         if (!active) return;
 
-        const data = result.data;
+        const data = result.book;
 
         setBook(data);
         setTitle(data.title);
@@ -105,9 +98,7 @@ export default function EditPage({ params }: EditPageProps) {
         setDescription(data.description);
         setTotalCopies(String(data.totalCopies ?? 1));
 
-        setImagePreview(
-          `${API_URL}/book-image/${data._id}`
-        );
+        setImagePreview(`${API_URL}/book-image/${data._id}`);
       } catch (err) {
         if (!active) return;
 
@@ -130,6 +121,15 @@ export default function EditPage({ params }: EditPageProps) {
     };
   }, [params]);
 
+  // Cleanup temporary image preview URL
+  useEffect(() => {
+    if (!imagePreview.startsWith("blob:")) return;
+
+    return () => {
+      URL.revokeObjectURL(imagePreview);
+    };
+  }, [imagePreview]);
+
   // Handle image selection
   const handleImageChange = (
     e: React.ChangeEvent<HTMLInputElement>
@@ -138,101 +138,109 @@ export default function EditPage({ params }: EditPageProps) {
 
     if (!selectedFile) return;
 
-    if (!["image/jpeg", "image/png", "image/webp"].includes(selectedFile.type)) {
+    if (
+      !["image/jpeg", "image/png", "image/webp"].includes(
+        selectedFile.type
+      )
+    ) {
       setError("Please select a JPG, PNG or WEBP image.");
+      e.target.value = "";
       return;
     }
 
     if (selectedFile.size > 5 * 1024 * 1024) {
       setError("Image size must be less than 5 MB.");
+      e.target.value = "";
       return;
     }
 
     setError("");
+    setSuccess("");
     setImage(selectedFile);
 
     setImagePreview(URL.createObjectURL(selectedFile));
   };
 
   // Update book
- 
-const handleUpdate = async (
-  e: FormEvent<HTMLFormElement>
-) => {
-  e.preventDefault();
+  const handleUpdate = async (
+    e: FormEvent<HTMLFormElement>
+  ) => {
+    e.preventDefault();
 
-  if (!API_URL || !bookId || !book) {
-    setError("Book information is not available.");
-    return;
-  }
-
-  const newTotalCopies = Number(totalCopies);
-
-  const borrowedCopies =
-    book.totalCopies - book.availableCopies;
-
-  if (
-    !Number.isInteger(newTotalCopies) ||
-    newTotalCopies < 1 ||
-    newTotalCopies < borrowedCopies
-  ) {
-    setError(
-      `Total copies cannot be less than ${borrowedCopies} borrowed copies.`
-    );
-    return;
-  }
-
-  try {
-    setUpdating(true);
-    setError("");
-    setSuccess("");
-
-    const formData = new FormData();
-
-    formData.append("title", title.trim());
-    formData.append("author", author.trim());
-    formData.append("category", category);
-    formData.append("description", description.trim());
-    formData.append("totalCopies", String(newTotalCopies));
-
-    if (image) {
-      formData.append("image", image);
+    if (!API_URL || !bookId || !book) {
+      setError("Book information is not available.");
+      return;
     }
 
-    const response = await fetch(
-      `${API_URL}/books/${bookId}`,
-      {
+    if (!title.trim() || !author.trim() || !description.trim()) {
+      setError("Please fill in all required fields.");
+      return;
+    }
+
+    const newTotalCopies = Number(totalCopies);
+
+    const borrowedCopies =
+      book.totalCopies - book.availableCopies;
+
+    if (
+      !Number.isInteger(newTotalCopies) ||
+      newTotalCopies < 1 ||
+      newTotalCopies < borrowedCopies
+    ) {
+      setError(
+        `Total copies cannot be less than ${borrowedCopies} borrowed copies.`
+      );
+      return;
+    }
+
+    try {
+      setUpdating(true);
+      setError("");
+      setSuccess("");
+
+      const formData = new FormData();
+
+      formData.append("title", title.trim());
+      formData.append("author", author.trim());
+      formData.append("category", category);
+      formData.append("description", description.trim());
+      formData.append("totalCopies", String(newTotalCopies));
+
+      if (image) {
+        formData.append("image", image);
+      }
+
+      const response = await fetch(`${API_URL}/books/${bookId}`, {
         method: "PATCH",
         body: formData,
+        credentials: "include",
+      });
+
+      const result = await response.json();
+
+      console.log("PATCH Status:", response.status);
+      console.log("PATCH Response:", result);
+
+      if (!response.ok || !result.success) {
+        throw new Error(
+          result.message || "Failed to update book."
+        );
       }
-    );
 
-    const result = await response.json();
+      setSuccess("Book updated successfully!");
 
-    console.log("PATCH Status:", response.status);
-    console.log("PATCH Response:", result);
-
-    if (!response.ok || !result.success) {
-      throw new Error(
-        result.message || "Failed to update book."
+      router.refresh();
+      router.push(`/all-books/${bookId}`);
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Something went wrong."
       );
+    } finally {
+      setUpdating(false);
     }
-
-    setSuccess("Book updated successfully!");
-
-    router.refresh();
-    router.push(`/all-books/${bookId}`);
-  } catch (err) {
-    setError(
-      err instanceof Error
-        ? err.message
-        : "Something went wrong."
-    );
-  } finally {
-    setUpdating(false);
-  }
-};
-
+  };
 
   // Loading UI
   if (loading) {

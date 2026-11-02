@@ -49,6 +49,13 @@ export default function MyBorrowCard({
 
   // Return Book
   const handleReturn = async () => {
+    if (returning) return;
+
+    if (borrow.status === "returned") {
+      toast.error("This book has already been returned.");
+      return;
+    }
+
     if (!API_URL) {
       toast.error("Server URL is missing.");
       return;
@@ -61,16 +68,16 @@ export default function MyBorrowCard({
         `${API_URL}/borrows/${borrow._id}`,
         {
           method: "DELETE",
-          headers: {
-            "x-user-email": borrow.userEmail,
-          },
+          credentials: "include",
         }
       );
 
       const result = await response.json();
 
-      if (!response.ok) {
-        throw new Error(result.message || "Failed to return book.");
+      if (!response.ok || !result.success) {
+        throw new Error(
+          result.message || "Failed to return book."
+        );
       }
 
       toast.success(`"${book.title}" returned successfully!`);
@@ -112,7 +119,7 @@ export default function MyBorrowCard({
 
       {/* Book Image */}
       <div className="relative h-64 overflow-hidden bg-[#173F35]">
-        {book?._id ? (
+        {book?._id && API_URL ? (
           <Image
             src={`${API_URL}/book-image/${book._id}`}
             alt={book.title || "Book cover"}
@@ -175,15 +182,22 @@ export default function MyBorrowCard({
             </span>
 
             <span className="font-semibold text-[#173F35]">
-              Not returned yet
+              {borrow.returnedAt
+                ? formatDate(borrow.returnedAt)
+                : "Not returned yet"}
             </span>
           </div>
         </div>
 
         {/* Return Button */}
         <button
+          type="button"
           onClick={handleReturn}
-          disabled={returning || !book?._id}
+          disabled={
+            returning ||
+            !book?._id ||
+            borrow.status === "returned"
+          }
           className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#173F35] px-5 py-3 font-semibold text-white transition hover:bg-[#245B4C] disabled:cursor-not-allowed disabled:bg-gray-400"
         >
           {returning ? (
@@ -194,7 +208,9 @@ export default function MyBorrowCard({
           ) : (
             <>
               <RotateCcw size={18} />
-              Return Book
+              {borrow.status === "returned"
+                ? "Already Returned"
+                : "Return Book"}
             </>
           )}
         </button>

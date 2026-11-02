@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 import Link from "next/link";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Autoplay, Pagination, Navigation } from "swiper/modules";
@@ -44,18 +44,20 @@ const slides = [
   },
 ];
 
-export default function HeroBanner() {
-  const [mounted, setMounted] = useState(false);
+const subscribe = () => () => {};
+const getClientSnapshot = () => true;
+const getServerSnapshot = () => false;
 
-  // Render Swiper only after browser mounting
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+export default function HeroBanner() {
+  const mounted = useSyncExternalStore(
+    subscribe,
+    getClientSnapshot,
+    getServerSnapshot
+  );
 
   return (
     <section className="bg-[#F8F6EF] px-4 pb-12 pt-8 md:px-8 md:pb-16">
       <div className="mx-auto max-w-7xl">
-
         {mounted ? (
           <Swiper
             modules={[Autoplay, Pagination, Navigation]}
@@ -75,7 +77,6 @@ export default function HeroBanner() {
               return (
                 <SwiperSlide key={index}>
                   <div className="relative flex min-h-[420px] items-center overflow-hidden bg-[#173F35] px-7 py-14 text-white md:min-h-[470px] md:px-16">
-
                     {/* Decorative circles */}
                     <div className="absolute -right-20 -top-24 h-80 w-80 rounded-full border border-[#D8B76A]/20" />
 
@@ -83,7 +84,6 @@ export default function HeroBanner() {
 
                     {/* Content */}
                     <div className="relative z-10 max-w-2xl">
-
                       <div className="mb-5 flex items-center gap-2 text-sm font-semibold tracking-[0.2em] text-[#D8B76A]">
                         <Icon size={19} />
                         {slide.subtitle}
@@ -108,9 +108,7 @@ export default function HeroBanner() {
 
                     {/* Decorative Book Illustration */}
                     <div className="absolute bottom-8 right-10 hidden h-64 w-64 items-center justify-center rounded-full border border-[#D8B76A]/30 bg-white/5 md:flex lg:right-24">
-
                       <div className="flex h-44 w-36 -rotate-6 flex-col items-center justify-center rounded-r-xl border-l-8 border-[#B18B43] bg-[#F8F6EF] p-4 text-center shadow-2xl">
-
                         <BookOpen
                           className="mb-4 text-[#173F35]"
                           size={42}
@@ -131,9 +129,8 @@ export default function HeroBanner() {
             })}
           </Swiper>
         ) : (
-          // Initial static placeholder during prerendering
+          /* Initial static placeholder */
           <div className="flex min-h-[420px] items-center overflow-hidden rounded-3xl bg-[#173F35] px-7 py-14 text-white md:min-h-[470px] md:px-16">
-
             <div className="max-w-2xl">
               <div className="mb-5 flex items-center gap-2 text-sm font-semibold tracking-[0.2em] text-[#D8B76A]">
                 <BookOpen size={19} />

@@ -21,31 +21,43 @@ interface MyCollectionCardProps {
 export default function MyCollectionCard({
   book,
 }: MyCollectionCardProps) {
-  const imageUrl = API_URL
-    ? `${API_URL}/book-image/${book._id}`
-    : "";
+  const imageUrl =
+    API_URL && book._id
+      ? `${API_URL}/book-image/${book._id}`
+      : "";
 
-  const createdDate = book.createdAt
-    ? new Date(book.createdAt).toLocaleDateString("en-US", {
-        day: "numeric",
-        month: "short",
-        year: "numeric",
-      })
-    : "Date unavailable";
+  const parsedDate = book.createdAt
+    ? new Date(book.createdAt)
+    : null;
 
-  const totalCopies = Number(book.totalCopies ?? 0);
-  const availableCopies = Number(book.availableCopies ?? 0);
+  const createdDate =
+    parsedDate && !Number.isNaN(parsedDate.getTime())
+      ? parsedDate.toLocaleDateString("en-US", {
+          day: "numeric",
+          month: "short",
+          year: "numeric",
+        })
+      : "Date unavailable";
+
+  const totalCopies = Math.max(
+    0,
+    Number(book.totalCopies ?? 0) || 0
+  );
+
+  const availableCopies = Math.max(
+    0,
+    Number(book.availableCopies ?? 0) || 0
+  );
 
   return (
     <article className="group overflow-hidden rounded-2xl border border-[#173F35]/10 bg-white shadow-sm transition-all duration-300 hover:-translate-y-2 hover:border-[#D8B76A] hover:shadow-xl">
 
       {/* Book Image */}
       <div className="relative h-64 overflow-hidden bg-[#EAE8DD]">
-
         {imageUrl ? (
           <Image
             src={imageUrl}
-            alt={book.title}
+            alt={book.title || "Book cover"}
             fill
             unoptimized
             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
