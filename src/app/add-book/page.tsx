@@ -56,14 +56,12 @@ export default function AddBookPage() {
     try {
       setLoading(true);
 
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_SERVER_SITE_URL}/books`,
-        {
-          method: "POST",
-          body: formData,
-          credentials: "include",
-        },
-      );
+      // Request through the Next.js frontend proxy.
+      const res = await fetch("/api/backend/books", {
+        method: "POST",
+        body: formData,
+        credentials: "include",
+      });
 
       const data = await res.json();
 
@@ -103,7 +101,9 @@ export default function AddBookPage() {
         <div className="rounded-2xl border border-[#153b32]/10 bg-white p-10 text-center shadow-lg">
           <BookOpen size={42} className="mx-auto mb-4 text-[#b18b43]" />
 
-          <h2 className="text-xl font-bold text-[#153b32]">Login Required</h2>
+          <h2 className="text-xl font-bold text-[#153b32]">
+            Login Required
+          </h2>
 
           <p className="mt-2 text-sm text-[#64756c]">
             Please login to add a book to NovelNest.
@@ -297,7 +297,9 @@ export default function AddBookPage() {
                   {imageName || "Click to upload book cover"}
                 </p>
 
-                <p className="mt-2 text-xs text-[#819087]">PNG, JPG or WEBP</p>
+                <p className="mt-2 text-xs text-[#819087]">
+                  PNG, JPG or WEBP
+                </p>
 
                 <Input
                   id="image"
@@ -348,7 +350,6 @@ export default function AddBookPage() {
               </div>
 
               <div className="grid gap-6 sm:grid-cols-2">
-                {/* User Name */}
                 <div className="space-y-2.5">
                   <Label
                     htmlFor="userName"
@@ -367,7 +368,6 @@ export default function AddBookPage() {
                   />
                 </div>
 
-                {/* User Email */}
                 <div className="space-y-2.5">
                   <Label
                     htmlFor="userEmail"
