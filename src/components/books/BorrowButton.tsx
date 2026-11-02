@@ -3,9 +3,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowUpRight, Loader2 } from "lucide-react";
 import Link from "next/link";
-
+import { ArrowUpRight, Loader2 } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
 
 interface BorrowButtonProps {
@@ -18,6 +17,7 @@ export default function BorrowButton({
   availableCopies,
 }: BorrowButtonProps) {
   const router = useRouter();
+
   const { data: session, isPending } = authClient.useSession();
 
   const [borrowing, setBorrowing] = useState(false);
@@ -27,11 +27,13 @@ export default function BorrowButton({
   const handleBorrow = async () => {
     if (isPending || borrowing) return;
 
+    // Check login
     if (!session?.user) {
       router.push("/sign-in");
       return;
     }
 
+    // Check available copies
     if (availableCopies <= 0) {
       setMessage("This book is currently unavailable.");
       setIsError(true);
@@ -43,12 +45,14 @@ export default function BorrowButton({
       setMessage("");
       setIsError(false);
 
+      // Send request through Next.js backend proxy
       const response = await fetch("/api/backend/borrows", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         credentials: "include",
+        cache: "no-store",
         body: JSON.stringify({
           bookId,
         }),
@@ -68,6 +72,8 @@ export default function BorrowButton({
       // Refresh book details and available copies
       router.refresh();
     } catch (error) {
+      console.error("Borrow book error:", error);
+
       setMessage(
         error instanceof Error
           ? error.message
@@ -83,6 +89,7 @@ export default function BorrowButton({
   return (
     <div className="flex-1">
       <button
+        type="button"
         onClick={handleBorrow}
         disabled={
           borrowing ||
@@ -95,6 +102,11 @@ export default function BorrowButton({
           <>
             <Loader2 size={19} className="animate-spin" />
             Borrowing...
+          </>
+        ) : isPending ? (
+          <>
+            <Loader2 size={19} className="animate-spin" />
+            Checking Login...
           </>
         ) : (
           <>
