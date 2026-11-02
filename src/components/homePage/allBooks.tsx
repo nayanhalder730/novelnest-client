@@ -10,17 +10,17 @@ interface BooksResponse {
   message?: string;
 }
 
-const API_URL =
-  process.env.BACKEND_URL || "http://localhost:8000";
-
 export default async function AllBooks() {
   let cardData: Book[] = [];
 
   try {
-    const res = await fetch(`${API_URL}/allBooks`, {
-      method: "GET",
-      cache: "no-store",
-    });
+    const res = await fetch(
+      `${process.env.NEXT_PUBLIC_SERVER_SITE_URL}/allBooks`,
+      {
+        method: "GET",
+        cache: "no-store",
+      }
+    );
 
     if (!res.ok) {
       throw new Error(`Failed to fetch books: ${res.status}`);

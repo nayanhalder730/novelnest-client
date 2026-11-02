@@ -57,16 +57,11 @@ export default function MyBorrowCard({
       return;
     }
 
-    if (!API_URL) {
-      toast.error("Server URL is missing.");
-      return;
-    }
-
     try {
       setReturning(true);
 
       const response = await fetch(
-        `${API_URL}/borrows/${borrow._id}`,
+        `/api/backend/borrows/${encodeURIComponent(borrow._id)}`,
         {
           method: "DELETE",
           credentials: "include",
@@ -115,14 +110,19 @@ export default function MyBorrowCard({
     });
   };
 
+  const imageUrl =
+    API_URL && book?._id
+      ? `${API_URL.replace(/\/$/, "")}/book-image/${book._id}`
+      : "";
+
   return (
     <div className="group overflow-hidden rounded-2xl border border-[#173F35]/10 bg-white shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-lg">
 
       {/* Book Image */}
       <div className="relative h-64 overflow-hidden bg-[#173F35]">
-        {book?._id && API_URL ? (
+        {imageUrl ? (
           <Image
-            src={`${API_URL}/book-image/${book._id}`}
+            src={imageUrl}
             alt={book.title || "Book cover"}
             fill
             unoptimized

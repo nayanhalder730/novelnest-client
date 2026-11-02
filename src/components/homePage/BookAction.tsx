@@ -7,8 +7,6 @@ import { useState } from "react";
 import { Pencil, Trash2, Loader2 } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
 
-const API_URL = process.env.NEXT_PUBLIC_SERVER_SITE_URL;
-
 interface BookActionsProps {
   bookId: string;
   ownerId?: string;
@@ -30,17 +28,6 @@ export default function BookActions({
     Boolean(ownerId && session?.user?.id) &&
     String(ownerId).trim() === String(session?.user?.id).trim();
 
-  // Debugging information
-  console.log("========== BOOK ACTION DEBUG ==========");
-  console.log("Book ID:", bookId);
-  console.log("Book Owner ID:", ownerId);
-  console.log("Logged In User ID:", session?.user?.id);
-  console.log("Session Loading:", isPending);
-  console.log("Session User:", session?.user);
-  console.log("Is Owner:", isOwner);
-  console.log("API URL:", API_URL);
-  console.log("=======================================");
-
   if (isPending || !isOwner) {
     return null;
   }
@@ -54,17 +41,12 @@ export default function BookActions({
 
     if (!confirmed) return;
 
-    if (!API_URL) {
-      setMessage("Server URL is not configured.");
-      return;
-    }
-
     try {
       setDeleting(true);
       setMessage("");
 
       const response = await fetch(
-        `${API_URL}/books/${bookId}`,
+        `/api/backend/books/${encodeURIComponent(bookId)}`,
         {
           method: "DELETE",
           credentials: "include",
@@ -72,9 +54,6 @@ export default function BookActions({
       );
 
       const result = await response.json();
-
-      console.log("DELETE Status:", response.status);
-      console.log("DELETE Response:", result);
 
       if (!response.ok || !result.success) {
         throw new Error(

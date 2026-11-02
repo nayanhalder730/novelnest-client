@@ -1,94 +1,189 @@
 
+"use client";
+
+import { useEffect, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import {
-  Search,
-  BookOpen,
-  BookmarkCheck,
   ArrowRight,
+  BookOpen,
+  Loader2,
 } from "lucide-react";
 
-const steps = [
-  {
-    number: "01",
-    icon: Search,
-    title: "Discover a Book",
-    description:
-      "Explore our library and find books that match your interests.",
-  },
-  {
-    number: "02",
-    icon: BookmarkCheck,
-    title: "Request to Borrow",
-    description:
-      "Choose your favorite book and submit a borrowing request.",
-  },
-  {
-    number: "03",
-    icon: BookOpen,
-    title: "Enjoy Reading",
-    description:
-      "Get your book and enjoy a wonderful reading experience.",
-  },
-];
+interface Book {
+  _id: string;
+  title: string;
+  author: string;
+  category: string;
+  description: string;
+  createdAt: string;
+  totalCopies?: number;
+  availableCopies?: number;
+}
 
-export default function HowBorrowingWorks() {
+interface BooksResponse {
+  success: boolean;
+  count: number;
+  books: Book[];
+  message?: string;
+}
+
+const API_URL = process.env.NEXT_PUBLIC_SERVER_SITE_URL;
+
+const NewArrivals = () => {
+  const [books, setBooks] = useState<Book[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    const fetchBooks = async () => {
+      if (!API_URL) {
+        setError("Backend URL is not configured.");
+        setLoading(false);
+        return;
+      }
+
+      try {
+        setLoading(true);
+        setError("");
+
+        const response = await fetch(
+          `${API_URL.replace(/\/$/, "")}/books`,
+          {
+            cache: "no-store",
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch books.");
+        }
+
+        const result: BooksResponse = await response.json();
+
+        if (!result.success || !Array.isArray(result.books)) {
+          throw new Error(
+            result.message || "Invalid books response."
+          );
+        }
+
+        setBooks(result.books.slice(0, 6));
+      } catch (error) {
+        console.error("New arrivals error:", error);
+
+        setError(
+          error instanceof Error
+            ? error.message
+            : "Something went wrong."
+        );
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchBooks();
+  }, []);
+
   return (
-    <section className="bg-white px-4 py-16 md:px-8">
-      <div className="mx-auto max-w-7xl">
-        <div className="mx-auto mb-12 max-w-2xl text-center">
-          <p className="mb-3 text-sm font-bold uppercase tracking-[0.2em] text-[#B18B43]">
-            Simple and convenient
-          </p>
+    <section className="py-16 md:py-20">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="mb-10 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+          <div>
+            <p className="mb-2 text-sm font-semibold uppercase tracking-widest text-[#087f75]">
+              Discover Something New
+            </p>
 
-          <h2 className="text-3xl font-bold text-[#173F35] md:text-4xl">
-            How Borrowing Works
-          </h2>
+            <h2 className="text-3xl font-bold text-gray-900 md:text-4xl">
+              New Arrivals
+            </h2>
 
-          <p className="mt-4 text-gray-600">
-            Getting your next favorite book is easy. Follow these three
-            simple steps and start your reading journey.
-          </p>
-        </div>
+            <p className="mt-3 max-w-xl text-gray-600">
+              Explore the latest books added to our library.
+            </p>
+          </div>
 
-        <div className="grid gap-8 md:grid-cols-3">
-          {steps.map((step) => {
-            const Icon = step.icon;
-
-            return (
-              <div
-                key={step.number}
-                className="relative rounded-2xl border border-[#173F35]/10 bg-[#F8F6EF] p-8 text-center transition duration-300 hover:-translate-y-2 hover:shadow-lg"
-              >
-                <span className="absolute right-6 top-5 text-3xl font-bold text-[#D8B76A]/60">
-                  {step.number}
-                </span>
-
-                <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-[#173F35] text-[#D8B76A]">
-                  <Icon size={30} />
-                </div>
-
-                <h3 className="text-xl font-bold text-[#173F35]">
-                  {step.title}
-                </h3>
-
-                <p className="mt-3 text-sm leading-7 text-gray-600">
-                  {step.description}
-                </p>
-              </div>
-            );
-          })}
-        </div>
-
-        <div className="mt-10 text-center">
           <Link
             href="/all-books"
-            className="inline-flex items-center gap-2 font-semibold text-[#173F35] transition hover:text-[#B18B43]"
+            className="inline-flex items-center gap-2 font-semibold text-[#087f75] transition hover:gap-3"
           >
-            Find Your Next Book
+            Explore All Books
             <ArrowRight size={18} />
           </Link>
         </div>
+
+        {loading ? (
+          <div className="flex min-h-60 items-center justify-center">
+            <Loader2 className="animate-spin text-[#087f75]" size={32} />
+          </div>
+        ) : error ? (
+          <div className="rounded-xl border border-red-200 bg-red-50 p-6 text-center text-red-600">
+            {error}
+          </div>
+        ) : books.length === 0 ? (
+          <div className="rounded-xl border border-dashed border-gray-300 py-16 text-center">
+            <BookOpen
+              size={40}
+              className="mx-auto mb-3 text-gray-400"
+            />
+            <p className="font-medium text-gray-700">
+              No books available yet.
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {books.map((book) => (
+              <article
+                key={book._id}
+                className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
+              >
+                <Link href={`/all-books/${book._id}`}>
+                  <div className="relative h-64 bg-gray-100">
+                    <Image
+                      src={`${API_URL.replace(/\/$/, "")}/book-image/${book._id}`}
+                      alt={book.title}
+                      fill
+                      unoptimized
+                      className="object-cover"
+                    />
+                  </div>
+
+                  <div className="p-5">
+                    <span className="rounded-full bg-[#087f75]/10 px-3 py-1 text-xs font-semibold text-[#087f75]">
+                      {book.category}
+                    </span>
+
+                    <h3 className="mt-4 line-clamp-1 text-xl font-bold text-gray-900">
+                      {book.title}
+                    </h3>
+
+                    <p className="mt-1 text-sm text-gray-500">
+                      By {book.author}
+                    </p>
+
+                    <p className="mt-3 line-clamp-2 text-sm leading-6 text-gray-600">
+                      {book.description}
+                    </p>
+
+                    <div className="mt-5 flex items-center justify-between border-t border-gray-100 pt-4">
+                      <span className="text-sm font-medium text-gray-500">
+                        {typeof book.availableCopies === "number"
+                          ? `${book.availableCopies} copies available`
+                          : "View book details"}
+                      </span>
+
+                      <span className="inline-flex items-center gap-1 text-sm font-semibold text-[#087f75]">
+                        Details
+                        <ArrowRight size={16} />
+                      </span>
+                    </div>
+                  </div>
+                </Link>
+              </article>
+            ))}
+          </div>
+        )}
       </div>
     </section>
   );
-}
+};
+
+export default NewArrivals;

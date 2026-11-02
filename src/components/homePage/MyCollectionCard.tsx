@@ -23,7 +23,7 @@ export default function MyCollectionCard({
 }: MyCollectionCardProps) {
   const imageUrl =
     API_URL && book._id
-      ? `${API_URL}/book-image/${book._id}`
+      ? `${API_URL.replace(/\/$/, "")}/book-image/${book._id}`
       : "";
 
   const parsedDate = book.createdAt

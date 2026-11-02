@@ -26,7 +26,7 @@ export default function BookCard({ book }: { book: Book }) {
 
   const imageUrl =
     API_URL && book._id
-      ? `${API_URL}/book-image/${book._id}`
+      ? `${API_URL.replace(/\/$/, "")}/book-image/${book._id}`
       : "";
 
   return (

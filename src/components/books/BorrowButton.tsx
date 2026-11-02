@@ -13,8 +13,6 @@ interface BorrowButtonProps {
   availableCopies: number;
 }
 
-const API_URL = process.env.NEXT_PUBLIC_SERVER_SITE_URL;
-
 export default function BorrowButton({
   bookId,
   availableCopies,
@@ -40,18 +38,12 @@ export default function BorrowButton({
       return;
     }
 
-    if (!API_URL) {
-      setMessage("Server URL is not configured.");
-      setIsError(true);
-      return;
-    }
-
     try {
       setBorrowing(true);
       setMessage("");
       setIsError(false);
 
-      const response = await fetch(`${API_URL}/borrows`, {
+      const response = await fetch("/api/backend/borrows", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
