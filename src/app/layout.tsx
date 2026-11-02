@@ -20,7 +20,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "NovelNest | A World Between Pages",
+  title: "NovelNest | Home",
   description:
     "Discover amazing books, explore stories, and build your personal reading collection with NovelNest.",
 };

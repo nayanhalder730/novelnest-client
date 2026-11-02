@@ -20,6 +20,7 @@ export interface Borrow {
   bookId: string;
   userEmail: string;
   borrowDate: string;
+  returnDate?: string | null;
   returnedAt: string | null;
   status: "borrowed" | "returned";
   book: {
@@ -82,7 +83,7 @@ export default function MyBorrowCard({
 
       toast.success(`"${book.title}" returned successfully!`);
 
-      // Remove returned book from My Borrows page
+      // Notify parent to remove the card
       onReturned(borrow._id);
     } catch (err) {
       console.error("Return Book Error:", err);
@@ -98,7 +99,7 @@ export default function MyBorrowCard({
   };
 
   // Format Date
-  const formatDate = (date?: string | null) => {
+  const formatDate = (date?: string | Date | null) => {
     if (!date) return "Not available";
 
     const parsedDate = new Date(date);
@@ -182,9 +183,14 @@ export default function MyBorrowCard({
             </span>
 
             <span className="font-semibold text-[#173F35]">
-              {borrow.returnedAt
-                ? formatDate(borrow.returnedAt)
-                : "Not returned yet"}
+              {borrow.returnDate
+                ? formatDate(borrow.returnDate)
+                : formatDate(
+                    new Date(
+                      new Date(borrow.borrowDate).getTime() +
+                        7 * 24 * 60 * 60 * 1000
+                    )
+                  )}
             </span>
           </div>
         </div>

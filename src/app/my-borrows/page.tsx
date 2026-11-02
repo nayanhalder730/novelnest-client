@@ -33,7 +33,7 @@ export default function MyBorrowsPage() {
 
   const userEmail = session?.user?.email?.toLowerCase() ?? "";
 
-  // Fetch current logged-in user's borrow records
+  // Fetch only currently borrowed books
   const fetchBorrows = useCallback(async () => {
     if (!userEmail) {
       setBorrows([]);
@@ -68,8 +68,12 @@ export default function MyBorrowsPage() {
         );
       }
 
-      // Backend should return only the authenticated user's records.
-      setBorrows(result.borrows ?? []);
+      // Show only books that are currently borrowed
+      const activeBorrows = (result.borrows ?? []).filter(
+        (borrow) => borrow.status === "borrowed"
+      );
+
+      setBorrows(activeBorrows);
     } catch (err) {
       console.error("My Borrows Error:", err);
 
@@ -88,36 +92,24 @@ export default function MyBorrowsPage() {
     if (isPending) return;
 
     if (!userEmail) {
+      setBorrows([]);
+      setLoading(false);
       return;
     }
 
     const timeoutId = window.setTimeout(fetchBorrows, 0);
+
     return () => window.clearTimeout(timeoutId);
   }, [isPending, userEmail, fetchBorrows]);
 
-  // Update UI after successfully returning a book
-  const handleReturned = (borrowId: string) => {
+  // Remove returned book immediately from UI
+  const handleReturned = useCallback((borrowId: string) => {
     setBorrows((previousBorrows) =>
-      previousBorrows.map((borrow) =>
-        borrow._id === borrowId
-          ? {
-              ...borrow,
-              status: "returned",
-              returnedAt: new Date().toISOString(),
-            }
-          : borrow
+      previousBorrows.filter(
+        (borrow) => String(borrow._id) !== String(borrowId)
       )
     );
-  };
-
-  // Summary counts
-  const borrowedCount = borrows.filter(
-    (borrow) => borrow.status === "borrowed"
-  ).length;
-
-  const returnedCount = borrows.filter(
-    (borrow) => borrow.status === "returned"
-  ).length;
+  }, []);
 
   // Loading state
   if (isPending || (userEmail && loading)) {
@@ -179,16 +171,16 @@ export default function MyBorrowsPage() {
           </h1>
 
           <p className="mt-3 text-gray-500">
-            Manage your borrowed books and return them easily.
+            Manage your currently borrowed books and return them easily.
           </p>
         </div>
 
         {/* Summary Cards */}
-        <div className="mb-10 grid gap-5 sm:grid-cols-3">
+        <div className="mb-10 grid gap-5 sm:grid-cols-2">
 
           <div className="rounded-2xl border border-[#173F35]/10 bg-white p-6 shadow-sm">
             <p className="text-sm text-gray-500">
-              Total Borrow Records
+              Total Currently Borrowed
             </p>
 
             <h2 className="mt-2 text-3xl font-extrabold text-[#173F35]">
@@ -198,21 +190,11 @@ export default function MyBorrowsPage() {
 
           <div className="rounded-2xl border border-[#173F35]/10 bg-white p-6 shadow-sm">
             <p className="text-sm text-gray-500">
-              Currently Borrowed
+              Available Return Actions
             </p>
 
             <h2 className="mt-2 text-3xl font-extrabold text-[#B18B43]">
-              {borrowedCount}
-            </h2>
-          </div>
-
-          <div className="rounded-2xl border border-[#173F35]/10 bg-white p-6 shadow-sm">
-            <p className="text-sm text-gray-500">
-              Returned Books
-            </p>
-
-            <h2 className="mt-2 text-3xl font-extrabold text-green-700">
-              {returnedCount}
+              {borrows.length}
             </h2>
           </div>
 
@@ -234,20 +216,20 @@ export default function MyBorrowsPage() {
           </div>
         )}
 
-        {/* Borrow History Header */}
+        {/* Currently Borrowed Header */}
         <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 className="text-2xl font-bold text-[#173F35]">
-              Borrow History
+              Currently Borrowed Books
             </h2>
 
             <p className="mt-1 text-sm text-gray-500">
-              All your borrowed and returned books.
+              Your active borrowed books.
             </p>
           </div>
 
           <span className="rounded-full bg-[#173F35]/10 px-4 py-2 text-sm font-bold text-[#173F35]">
-            {borrows.length} Records
+            {borrows.length} Books
           </span>
         </div>
 
@@ -271,12 +253,12 @@ export default function MyBorrowsPage() {
               />
 
               <h3 className="text-2xl font-bold text-[#173F35]">
-                No Borrowed Books
+                No Currently Borrowed Books
               </h3>
 
               <p className="mx-auto mt-3 max-w-md text-gray-500">
-                You haven&apos;t borrowed any books yet. Explore our
-                library and find your next favorite book.
+                You don&apos;t have any currently borrowed books.
+                Explore our library and borrow a book.
               </p>
 
               <Link

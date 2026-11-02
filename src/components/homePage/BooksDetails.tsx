@@ -14,7 +14,6 @@ import {
 
 import BorrowButton from "../books/BorrowButton";
 import BookActions from "./BookAction";
-import { auth } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -28,6 +27,7 @@ interface Book {
   totalCopies?: number;
   availableCopies?: number;
   createdAt?: string;
+  updatedAt?: string;
 }
 
 interface BookResponse {
@@ -45,36 +45,58 @@ export default async function BookDetails({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
 
   if (!slug) {
     notFound();
   }
 
-  let result: BookResponse;
+  let result: BookResponse | null = null;
+  let responseStatus = 0;
+  let responseError = "";
 
   try {
+    const requestHeaders = await headers();
+
     const res = await fetch(`${API_URL}/books/${slug}`, {
       method: "GET",
       cache: "no-store",
+      headers: {
+        cookie: requestHeaders.get("cookie") || "",
+      },
     });
 
-    if (res.status === 404) {
-      notFound();
-    }
+    responseStatus = res.status;
 
     if (!res.ok) {
-      throw new Error(
-        `Failed to fetch book details: ${res.status}`
-      );
-    }
+      responseError = await res.text();
 
-    result = await res.json();
+      console.error("BOOK API ERROR:", {
+        status: res.status,
+        slug,
+        url: `${API_URL}/books/${slug}`,
+        response: responseError,
+      });
+    } else {
+      result = await res.json();
+    }
   } catch (error) {
     console.error("Book Details Fetch Error:", error);
-    throw new Error("Unable to load book details.");
+
+    throw new Error(
+      error instanceof Error
+        ? error.message
+        : "Unable to connect to the backend server."
+    );
+  }
+
+  if (responseStatus === 404) {
+    notFound();
+  }
+
+  if (responseStatus !== 200 || !result) {
+    throw new Error(
+      `Unable to load book details. Status: ${responseStatus}. ${responseError}`
+    );
   }
 
   if (!result.success || !result.book?._id) {
@@ -82,11 +104,13 @@ export default async function BookDetails({
   }
 
   const book = result.book;
-  const isOwner =
-    Boolean(book.userId) &&
-    session?.user?.id === String(book.userId);
 
-  const imageUrl = `${API_URL}/book-image/${book._id}`;
+  // Stable image cache version. No Date.now() during prerendering.
+  const imageVersion =
+    book.updatedAt || book.createdAt || book._id;
+
+  const imageUrl =
+    `${API_URL}/book-image/${book._id}?v=${encodeURIComponent(imageVersion)}`;
 
   const availableCopies = Math.max(
     0,
@@ -114,6 +138,7 @@ export default async function BookDetails({
   return (
     <main className="min-h-screen bg-[#F8F6EF] px-4 py-10 md:px-8 md:py-16">
       <div className="mx-auto max-w-7xl">
+
         {/* Back Button */}
         <Link
           href="/all-books"
@@ -123,11 +148,12 @@ export default async function BookDetails({
           Back to All Books
         </Link>
 
-        <div className="overflow-hidden rounded-3xl border border-[#173F35]/10 bg-white shadow-sm">
-          <div className="grid grid-cols-1 lg:grid-cols-2">
+        <div className="overflow-hidden rounded-2xl border border-[#173F35]/10 bg-white shadow-sm md:rounded-3xl">
+          <div className="grid grid-cols-1 lg:grid-cols-[minmax(280px,0.85fr)_minmax(0,1.15fr)]">
+
             {/* Book Cover */}
-            <div className="flex items-center justify-center bg-[#173F35] p-8 md:p-14">
-              <div className="relative h-[380px] w-full max-w-[280px] overflow-hidden rounded-xl shadow-2xl md:h-[480px] md:max-w-[340px]">
+            <div className="flex items-center justify-center bg-[#173F35] p-5 sm:p-8 md:p-10">
+              <div className="relative aspect-[3/4] w-full max-w-[min(82vw,22rem)] overflow-hidden rounded-xl shadow-2xl">
                 <Image
                   src={imageUrl}
                   alt={book.title}
@@ -141,7 +167,8 @@ export default async function BookDetails({
             </div>
 
             {/* Book Information */}
-            <div className="flex flex-col justify-center p-6 md:p-12 lg:p-14">
+            <div className="flex min-w-0 flex-col justify-center p-5 sm:p-8 md:p-10 lg:p-12">
+
               {/* Category */}
               <div className="mb-5">
                 <span className="inline-flex rounded-full bg-[#D8B76A]/20 px-4 py-2 text-xs font-bold uppercase tracking-widest text-[#92702F]">
@@ -150,7 +177,7 @@ export default async function BookDetails({
               </div>
 
               {/* Title */}
-              <h1 className="text-3xl font-bold leading-tight text-[#173F35] md:text-5xl">
+              <h1 className="break-words text-[clamp(1.875rem,4vw,3rem)] font-bold leading-tight text-[#173F35]">
                 {book.title}
               </h1>
 
@@ -185,6 +212,7 @@ export default async function BookDetails({
 
               {/* Book Stats */}
               <div className="my-8 grid grid-cols-2 gap-4">
+
                 {/* Total Copies */}
                 <div className="rounded-2xl bg-[#F8F6EF] p-4">
                   <div className="mb-2 flex items-center gap-2 text-[#B18B43]">
@@ -256,7 +284,10 @@ export default async function BookDetails({
               </div>
 
               {/* Update and Delete Buttons */}
-              {isOwner && <BookActions bookId={book._id} />}
+              <BookActions
+                bookId={book._id}
+                ownerId={book.userId}
+              />
 
               {/* Added Date */}
               <div className="mt-8 flex items-center gap-2 border-t border-gray-200 pt-5 text-sm text-gray-500">

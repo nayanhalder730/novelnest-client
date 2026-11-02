@@ -181,6 +181,7 @@ export default function EditPage({ params }: EditPageProps) {
 
     const borrowedCopies =
       book.totalCopies - book.availableCopies;
+    const newAvailableCopies = newTotalCopies - borrowedCopies;
 
     if (
       !Number.isInteger(newTotalCopies) ||
@@ -205,6 +206,10 @@ export default function EditPage({ params }: EditPageProps) {
       formData.append("category", category);
       formData.append("description", description.trim());
       formData.append("totalCopies", String(newTotalCopies));
+      formData.append(
+        "availableCopies",
+        String(Math.max(0, newAvailableCopies))
+      );
 
       if (image) {
         formData.append("image", image);

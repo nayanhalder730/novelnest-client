@@ -39,7 +39,14 @@ export default function SignInPage() {
 
       toast.success("Login successful! Welcome back to NovelNest.");
 
-      router.push("/");
+      const callbackUrl = new URLSearchParams(window.location.search).get(
+        "callbackUrl"
+      );
+      router.push(
+        callbackUrl?.startsWith("/") && !callbackUrl.startsWith("//")
+          ? callbackUrl
+          : "/"
+      );
       router.refresh();
     } catch {
       setError("Something went wrong. Please try again.");
@@ -55,9 +62,15 @@ export default function SignInPage() {
   setLoading(true);
 
   try {
+    const callbackUrl = new URLSearchParams(window.location.search).get(
+      "callbackUrl"
+    );
     const { error } = await authClient.signIn.social({
       provider,
-      callbackURL: `/?socialAuth=success&provider=${provider}`,
+      callbackURL:
+        callbackUrl?.startsWith("/") && !callbackUrl.startsWith("//")
+          ? callbackUrl
+          : `/?socialAuth=success&provider=${provider}`,
     });
 
     if (error) {
