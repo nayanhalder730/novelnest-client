@@ -1,378 +1,437 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useState, type FormEvent, type ChangeEvent } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
-  BookOpen,
+  Eye,
+  EyeOff,
   UserRound,
   Mail,
   Lock,
-  Eye,
-  EyeOff,
-  ArrowRight,
+  Camera,
+  X,
+  BookOpen,
+  Loader2,
 } from "lucide-react";
+import { toast } from "react-toastify";
 
 import { authClient } from "@/lib/auth-client";
-import { toast } from "react-toastify";
+
+const IMGBB_API_KEY = process.env.NEXT_PUBLIC_IMGBB_API_KEY;
 
 export default function SignUpPage() {
   const router = useRouter();
 
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+
+  const [profileImage, setProfileImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState("");
+
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [socialLoading, setSocialLoading] = useState("");
 
-  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+  // Profile image select
+  const handleImageChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please select a valid image.");
+      e.target.value = "";
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Image size must be less than 5MB.");
+      e.target.value = "";
+      return;
+    }
+
+    setProfileImage(file);
+
+    const previewUrl = URL.createObjectURL(file);
+    setImagePreview(previewUrl);
+  };
+
+  // Remove selected image
+  const handleRemoveImage = () => {
+    if (imagePreview) {
+      URL.revokeObjectURL(imagePreview);
+    }
+
+    setProfileImage(null);
+    setImagePreview("");
+  };
+
+  // Upload image to ImgBB
+  const uploadImage = async (): Promise<string | null> => {
+    if (!profileImage) return null;
+
+    if (!IMGBB_API_KEY) {
+      throw new Error("ImgBB API key is missing.");
+    }
+
+    const formData = new FormData();
+    formData.append("image", profileImage);
+
+    const response = await fetch(
+      `https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`,
+      {
+        method: "POST",
+        body: formData,
+      }
+    );
+
+    const result = await response.json();
+
+    if (!response.ok || !result.success) {
+      throw new Error("Profile image upload failed.");
+    }
+
+    return result.data.url;
+  };
+
+  // Email and password signup
+  const handleSignUp = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    setLoading(true);
-    setError("");
-
-    const form = new FormData(e.currentTarget);
-
-    const name = String(form.get("name") || "").trim();
-    const email = String(form.get("email") || "").trim();
-    const password = String(form.get("password") || "");
-
-    if (!name || !email || !password) {
-      setError("Please fill in all fields.");
-      setLoading(false);
+    if (!name.trim() || !email.trim() || !password) {
+      toast.error("Please fill in all required fields.");
       return;
     }
 
     if (password.length < 8) {
-      setError("Password must be at least 8 characters.");
-      setLoading(false);
+      toast.error("Password must be at least 8 characters.");
       return;
     }
 
     try {
+      setLoading(true);
+
+      // Upload profile image first
+      const imageUrl = await uploadImage();
+
+      // Create account
       const { error } = await authClient.signUp.email({
-        name,
-        email,
+        name: name.trim(),
+        email: email.trim(),
         password,
+        image: imageUrl || undefined,
       });
 
       if (error) {
-        setError(error.message || "Unable to create account.");
-        toast.error(error.message || "Unable to create account.");
+        toast.error(error.message || "Registration failed.");
         return;
       }
 
-      toast.success("Account created successfully! Welcome to NovelNest.");
+      toast.success("Account created successfully!");
 
       router.push("/");
-      router.refresh();
-    } catch {
-      setError("Something went wrong. Please try again.");
-      toast.error("Something went wrong. Please try again.");
+    } catch (error) {
+      console.error("Signup error:", error);
+
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Something went wrong. Please try again."
+      );
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSocialLogin = async (provider: "google" | "github") => {
-  setError("");
-  setLoading(true);
+  // Google and GitHub signup
+  const handleSocialSignUp = async (provider: "google" | "github") => {
+    try {
+      setSocialLoading(provider);
 
-  try {
-    const { error } = await authClient.signIn.social({
-      provider,
-      callbackURL: `/?socialAuth=success&provider=${provider}`,
-    });
-
-    if (error) {
-      const errorMessage =
-        error.message || `${provider} signup failed.`;
-
-      setError(errorMessage);
-      toast.error(errorMessage);
-      setLoading(false);
+      await authClient.signIn.social({
+        provider,
+        callbackURL: `/?socialAuth=success&provider=${provider}`,
+      });
+    } catch (error) {
+      console.error(`${provider} signup error:`, error);
+      toast.error(`${provider} signup failed.`);
+      setSocialLoading("");
     }
-  } catch {
-    const errorMessage = "Unable to connect. Please try again.";
-
-    setError(errorMessage);
-    toast.error(errorMessage);
-    setLoading(false);
-  }
-};
+  };
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-[#F8F6EF] p-4 sm:p-6">
-      <div className="grid w-full max-w-6xl overflow-hidden rounded-[28px] bg-white shadow-2xl lg:grid-cols-2">
-        {/* LEFT BRANDING SECTION */}
-        <section className="relative hidden min-h-[740px] flex-col justify-between overflow-hidden bg-[#173F35] p-12 text-white lg:flex">
-          <div className="absolute -bottom-24 -right-20 h-96 w-96 rounded-full border border-[#D8B76A]/30" />
-
-          <div className="absolute -bottom-12 -right-8 h-64 w-64 rounded-full border border-[#D8B76A]/30" />
+    <main className="min-h-screen bg-[#F8F6EF] px-4 py-12">
+      <div className="mx-auto grid min-h-[650px] max-w-6xl overflow-hidden rounded-3xl bg-white shadow-xl lg:grid-cols-2">
+        {/* Left Side */}
+        <section className="relative hidden flex-col justify-between overflow-hidden bg-[#173F35] p-12 text-white lg:flex">
+          <div className="absolute -right-24 -top-24 h-80 w-80 rounded-full border border-white/10" />
+          <div className="absolute -bottom-32 -left-20 h-96 w-96 rounded-full border border-white/10" />
 
           <Link href="/" className="relative z-10 flex items-center gap-3">
             <div className="rounded-xl bg-[#D8B76A] p-3 text-[#173F35]">
               <BookOpen size={28} />
             </div>
 
-            <span className="text-2xl font-bold tracking-tight">NovelNest</span>
+            <div>
+              <h1 className="text-2xl font-bold tracking-wide">
+                NOVELNEST
+              </h1>
+              <p className="text-xs tracking-widest text-[#D8B76A]">
+                A WORLD BETWEEN PAGES
+              </p>
+            </div>
           </Link>
 
           <div className="relative z-10 max-w-md">
-            <p className="mb-5 text-sm font-semibold uppercase tracking-[4px] text-[#D8B76A]">
-              Join Our Community
+            <p className="mb-4 text-sm font-semibold uppercase tracking-[0.25em] text-[#D8B76A]">
+              Begin Your Journey
             </p>
 
-            <h1 className="text-5xl font-bold leading-tight">
-              A world of books. A lifetime of stories.
-            </h1>
+            <h2 className="text-5xl font-bold leading-tight">
+              Every book opens a new world.
+            </h2>
 
-            <p className="mt-6 text-lg leading-8 text-white/65">
-              Create your account and explore a growing collection of books,
-              ideas, and inspiration.
+            <p className="mt-6 leading-8 text-white/70">
+              Join NovelNest and discover a world of stories, knowledge,
+              imagination, and endless possibilities.
             </p>
-
-            <div className="mt-10 grid grid-cols-2 gap-4">
-              <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
-                <BookOpen className="mb-3 text-[#D8B76A]" size={25} />
-                <h3 className="font-semibold">Explore Books</h3>
-                <p className="mt-1 text-xs text-white/50">
-                  Discover new stories
-                </p>
-              </div>
-
-              <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
-                <UserRound className="mb-3 text-[#D8B76A]" size={25} />
-                <h3 className="font-semibold">Your Library</h3>
-                <p className="mt-1 text-xs text-white/50">
-                  Build your collection
-                </p>
-              </div>
-            </div>
           </div>
 
-          <p className="relative z-10 text-sm text-white/45">
-            © NovelNest. All rights reserved.
+          <p className="relative z-10 text-sm text-white/50">
+            © 2026 NovelNest. All rights reserved.
           </p>
         </section>
 
-        {/* RIGHT SIGN UP FORM */}
-        <section className="flex items-center justify-center px-6 py-10 sm:px-14 lg:py-12">
+        {/* Right Side */}
+        <section className="flex items-center justify-center px-5 py-10 sm:px-10 lg:px-12">
           <div className="w-full max-w-md">
-            {/* MOBILE LOGO */}
-            <Link href="/" className="mb-8 flex items-center gap-3 lg:hidden">
-              <div className="rounded-xl bg-[#173F35] p-3 text-[#D8B76A]">
-                <BookOpen size={25} />
-              </div>
-
-              <span className="text-2xl font-bold text-[#173F35]">
-                NovelNest
-              </span>
+            <Link
+              href="/"
+              className="mb-8 flex items-center gap-2 text-sm font-semibold text-[#173F35] lg:hidden"
+            >
+              <BookOpen size={22} />
+              NOVELNEST
             </Link>
 
-            <div>
-              <p className="text-sm font-semibold uppercase tracking-[3px] text-[#B18B43]">
-                Start your journey
+            <div className="mb-8">
+              <p className="mb-2 text-sm font-semibold uppercase tracking-widest text-[#B18B43]">
+                Create Account
               </p>
 
-              <h2 className="mt-3 text-4xl font-bold tracking-tight text-[#173F35]">
-                Create account
+              <h2 className="text-3xl font-bold text-[#173F35]">
+                Join NovelNest
               </h2>
 
-              <p className="mt-3 leading-6 text-gray-500">
-                Join NovelNest and make room for more stories.
+              <p className="mt-2 text-sm text-gray-500">
+                Create your account and start exploring.
               </p>
             </div>
 
-            {/* SOCIAL SIGN UP */}
-            <div className="mt-7 grid grid-cols-2 gap-4">
-              {/* GOOGLE */}
-              <button
-                type="button"
-                onClick={() => handleSocialLogin("google")}
-                disabled={loading}
-                className="flex items-center justify-center gap-3 rounded-xl border border-gray-200 bg-white py-3.5 text-sm font-semibold text-[#173F35] transition hover:border-[#B18B43] hover:bg-[#F8F6EF] disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                <svg viewBox="0 0 48 48" className="h-5 w-5" aria-hidden="true">
-                  <path
-                    fill="#EA4335"
-                    d="M24 9.5c3.5 0 6.6 1.2 9 3.5l6.7-6.7C35.6 2.4 30.2 0 24 0 14.6 0 6.5 5.4 2.6 13.3l7.8 6.1C12.3 13.8 17.6 9.5 24 9.5Z"
-                  />
-                  <path
-                    fill="#4285F4"
-                    d="M46.1 24.5c0-1.6-.2-3.1-.5-4.5H24v9h12.4c-.6 2.9-2.3 5.4-4.8 7.1l7.5 5.8c4.4-4.1 7-10.1 7-17.4Z"
-                  />
-                  <path
-                    fill="#FBBC05"
-                    d="M10.4 28.6a14.4 14.4 0 0 1 0-9.2l-7.8-6.1a24 24 0 0 0 0 21.4l7.8-6.1Z"
-                  />
-                  <path
-                    fill="#34A853"
-                    d="M24 48c6.5 0 12-2.1 16-5.9l-7.5-5.8c-2.1 1.4-4.8 2.2-8.5 2.2-6.4 0-11.7-4.3-13.6-10.1l-7.8 6.1C6.5 42.6 14.6 48 24 48Z"
-                  />
-                </svg>
-                Google
-              </button>
+            {/* Profile Image */}
+            <div className="mb-7 flex flex-col items-center">
+              <div className="relative">
+                <div className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-full border-4 border-[#F8F6EF] bg-[#E8EEE9]">
+                  {imagePreview ? (
+                    <Image
+                      src={imagePreview}
+                      alt="Profile preview"
+                      width={96}
+                      height={96}
+                      unoptimized
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <UserRound size={38} className="text-[#173F35]/50" />
+                  )}
+                </div>
 
-              {/* GITHUB */}
-              <button
-                type="button"
-                onClick={() => handleSocialLogin("github")}
-                disabled={loading}
-                className="flex items-center justify-center gap-3 rounded-xl border border-gray-200 bg-white py-3.5 text-sm font-semibold text-[#173F35] transition hover:border-[#B18B43] hover:bg-[#F8F6EF] disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                <svg
-                  viewBox="0 0 24 24"
-                  className="h-5 w-5"
-                  fill="currentColor"
-                  aria-hidden="true"
-                >
-                  <path d="M12 .9a11.1 11.1 0 0 0-3.51 21.63c.55.1.76-.24.76-.54v-2.08c-3.1.67-3.76-1.32-3.76-1.32-.5-1.29-1.24-1.63-1.24-1.63-1.01-.69.08-.68.08-.68 1.12.08 1.71 1.15 1.71 1.15.99 1.7 2.6 1.21 3.23.92.1-.72.39-1.21.7-1.49-2.48-.28-5.09-1.24-5.09-5.53 0-1.22.44-2.21 1.15-2.99-.12-.28-.5-1.42.11-2.95 0 0 .94-.3 3.05 1.14a10.6 10.6 0 0 1 5.55 0c2.11-1.44 3.05-1.14 3.05-1.14.61 1.53.23 2.67.11 2.95.72.78 1.15 1.77 1.15 2.99 0 4.3-2.61 5.25-5.1 5.52.4.35.75 1.03.75 2.08v3.09c0 .3.2.65.76.54A11.1 11.1 0 0 0 12 .9Z" />
-                </svg>
-                GitHub
-              </button>
-            </div>
-
-            {/* DIVIDER */}
-            <div className="relative my-7">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-200" />
+                {imagePreview && (
+                  <button
+                    type="button"
+                    onClick={handleRemoveImage}
+                    className="absolute -right-1 -top-1 rounded-full bg-red-500 p-1.5 text-white transition hover:bg-red-600"
+                    aria-label="Remove profile image"
+                  >
+                    <X size={14} />
+                  </button>
+                )}
               </div>
 
-              <div className="relative flex justify-center">
-                <span className="bg-white px-4 text-xs font-medium uppercase tracking-wider text-gray-400">
-                  Or register with email
-                </span>
-              </div>
+              <label className="mt-3 flex cursor-pointer items-center gap-2 rounded-full border border-[#173F35]/20 px-4 py-2 text-sm font-medium text-[#173F35] transition hover:bg-[#F8F6EF]">
+                <Camera size={16} />
+                {profileImage ? "Change Photo" : "Upload Profile Photo"}
+
+                <input
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp"
+                  onChange={handleImageChange}
+                  className="hidden"
+                />
+              </label>
+
+              <p className="mt-2 text-xs text-gray-400">
+                JPG, PNG or WEBP (Maximum 5MB)
+              </p>
             </div>
 
-            {/* SIGN UP FORM */}
-            <form onSubmit={handleSubmit} className="space-y-4">
-              {/* NAME */}
+            {/* Signup Form */}
+            <form onSubmit={handleSignUp} className="space-y-5">
+              {/* Name */}
               <div>
-                <label
-                  htmlFor="name"
-                  className="mb-2 block text-sm font-semibold text-[#173F35]"
-                >
-                  Full name
+                <label className="mb-2 block text-sm font-semibold text-gray-700">
+                  Full Name
                 </label>
 
-                <div className="flex items-center rounded-xl border border-gray-200 px-4 transition focus-within:border-[#173F35] focus-within:ring-2 focus-within:ring-[#173F35]/10">
-                  <UserRound size={19} className="text-gray-400" />
+                <div className="flex items-center gap-3 rounded-xl border border-gray-200 px-4 transition focus-within:border-[#173F35]">
+                  <UserRound size={18} className="text-gray-400" />
 
                   <input
-                    id="name"
-                    name="name"
                     type="text"
-                    placeholder="Your full name"
+                    placeholder="Enter your full name"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
                     required
-                    autoComplete="name"
-                    className="w-full bg-transparent px-3 py-3.5 text-sm text-gray-800 outline-none"
+                    className="w-full bg-transparent py-3.5 text-sm outline-none"
                   />
                 </div>
               </div>
 
-              {/* EMAIL */}
+              {/* Email */}
               <div>
-                <label
-                  htmlFor="email"
-                  className="mb-2 block text-sm font-semibold text-[#173F35]"
-                >
-                  Email address
+                <label className="mb-2 block text-sm font-semibold text-gray-700">
+                  Email Address
                 </label>
 
-                <div className="flex items-center rounded-xl border border-gray-200 px-4 transition focus-within:border-[#173F35] focus-within:ring-2 focus-within:ring-[#173F35]/10">
-                  <Mail size={19} className="text-gray-400" />
+                <div className="flex items-center gap-3 rounded-xl border border-gray-200 px-4 transition focus-within:border-[#173F35]">
+                  <Mail size={18} className="text-gray-400" />
 
                   <input
-                    id="email"
-                    name="email"
                     type="email"
-                    placeholder="you@example.com"
+                    placeholder="Enter your email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
                     required
-                    autoComplete="email"
-                    className="w-full bg-transparent px-3 py-3.5 text-sm text-gray-800 outline-none"
+                    className="w-full bg-transparent py-3.5 text-sm outline-none"
                   />
                 </div>
               </div>
 
-              {/* PASSWORD */}
+              {/* Password */}
               <div>
-                <label
-                  htmlFor="password"
-                  className="mb-2 block text-sm font-semibold text-[#173F35]"
-                >
+                <label className="mb-2 block text-sm font-semibold text-gray-700">
                   Password
                 </label>
 
-                <div className="flex items-center rounded-xl border border-gray-200 px-4 transition focus-within:border-[#173F35] focus-within:ring-2 focus-within:ring-[#173F35]/10">
-                  <Lock size={19} className="text-gray-400" />
+                <div className="flex items-center gap-3 rounded-xl border border-gray-200 px-4 transition focus-within:border-[#173F35]">
+                  <Lock size={18} className="text-gray-400" />
 
                   <input
-                    id="password"
-                    name="password"
                     type={showPassword ? "text" : "password"}
-                    placeholder="Minimum 8 characters"
+                    placeholder="Create a password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
                     required
                     minLength={8}
-                    autoComplete="new-password"
-                    className="w-full bg-transparent px-3 py-3.5 text-sm text-gray-800 outline-none"
+                    className="w-full bg-transparent py-3.5 text-sm outline-none"
                   />
 
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    aria-label="Toggle password visibility"
                     className="text-gray-400 hover:text-[#173F35]"
+                    aria-label={
+                      showPassword ? "Hide password" : "Show password"
+                    }
                   >
-                    {showPassword ? <EyeOff size={19} /> : <Eye size={19} />}
+                    {showPassword ? (
+                      <EyeOff size={18} />
+                    ) : (
+                      <Eye size={18} />
+                    )}
                   </button>
                 </div>
+
+                <p className="mt-2 text-xs text-gray-400">
+                  Password must contain at least 8 characters.
+                </p>
               </div>
 
-              {/* ERROR MESSAGE */}
-              {error && (
-                <p
-                  role="alert"
-                  className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600"
-                >
-                  {error}
-                </p>
-              )}
-
-              {/* SUBMIT BUTTON */}
+              {/* Submit */}
               <button
                 type="submit"
                 disabled={loading}
-                className="group flex w-full items-center justify-center gap-3 rounded-xl bg-[#173F35] py-4 font-semibold text-white shadow-lg shadow-[#173F35]/15 transition hover:bg-[#245747] disabled:cursor-not-allowed disabled:opacity-60"
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#173F35] py-3.5 font-semibold text-white transition hover:bg-[#245748] disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {loading ? "Creating account..." : "Create Account"}
-
-                {!loading && (
-                  <ArrowRight
-                    size={19}
-                    className="transition group-hover:translate-x-1"
-                  />
+                {loading ? (
+                  <>
+                    <Loader2 size={18} className="animate-spin" />
+                    Creating Account...
+                  </>
+                ) : (
+                  "Create Account"
                 )}
               </button>
             </form>
 
-            {/* SIGN IN LINK */}
-            <p className="mt-7 text-center text-sm text-gray-500">
+            {/* Divider */}
+            <div className="my-6 flex items-center gap-4">
+              <div className="h-px flex-1 bg-gray-200" />
+              <span className="text-xs text-gray-400">
+                OR CONTINUE WITH
+              </span>
+              <div className="h-px flex-1 bg-gray-200" />
+            </div>
+
+            {/* Social Signup */}
+            <div className="grid grid-cols-2 gap-4">
+              <button
+                type="button"
+                disabled={!!socialLoading || loading}
+                onClick={() => handleSocialSignUp("google")}
+                className="flex items-center justify-center gap-2 rounded-xl border border-gray-200 py-3 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 disabled:opacity-50"
+              >
+                {socialLoading === "google" ? (
+                  <Loader2 size={17} className="animate-spin" />
+                ) : (
+                  <span className="text-lg font-bold text-red-500">G</span>
+                )}
+                Google
+              </button>
+
+              <button
+                type="button"
+                disabled={!!socialLoading || loading}
+                onClick={() => handleSocialSignUp("github")}
+                className="flex items-center justify-center gap-2 rounded-xl border border-gray-200 py-3 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 disabled:opacity-50"
+              >
+                {socialLoading === "github" ? (
+                  <Loader2 size={17} className="animate-spin" />
+                ) : (
+                  <svg
+                    viewBox="0 0 24 24"
+                    className="h-5 w-5 fill-current"
+                    aria-hidden="true"
+                  >
+                    <path d="M12 .8a11.2 11.2 0 0 0-3.54 21.83c.56.1.77-.24.77-.54v-2.1c-3.13.68-3.79-1.33-3.79-1.33-.51-1.3-1.25-1.65-1.25-1.65-1.02-.7.08-.69.08-.69 1.13.08 1.72 1.16 1.72 1.16 1 .1.7 2.34 3.1 1.79.1-.73.4-1.23.72-1.52-2.5-.28-5.13-1.25-5.13-5.57 0-1.23.44-2.23 1.16-3.02-.12-.28-.5-1.43.11-2.98 0 0 .95-.3 3.08 1.15a10.7 10.7 0 0 1 5.6 0c2.13-1.45 3.08-1.15 3.08-1.15.61 1.55.23 2.7.11 2.98.72.79 1.16 1.79 1.16 3.02 0 4.33-2.64 5.29-5.15 5.57.41.35.77 1.03.77 2.08v3.1c0 .3.2.65.78.54A11.2 11.2 0 0 0 12 .8Z" />
+                  </svg>
+                )}
+                GitHub
+              </button>
+            </div>
+
+            {/* Sign In Link */}
+            <p className="mt-8 text-center text-sm text-gray-500">
               Already have an account?{" "}
               <Link
                 href="/sign-in"
-                className="font-bold text-[#B18B43] hover:text-[#173F35]"
+                className="font-bold text-[#173F35] hover:text-[#B18B43]"
               >
                 Sign In
               </Link>
             </p>
-
-            {/* BACK TO HOME */}
-            <Link
-              href="/"
-              className="mt-6 block text-center text-sm text-gray-400 transition hover:text-[#173F35]"
-            >
-              ← Back to home
-            </Link>
           </div>
         </section>
       </div>

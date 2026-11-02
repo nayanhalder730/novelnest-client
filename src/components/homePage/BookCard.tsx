@@ -1,4 +1,3 @@
-
 "use client";
 
 import Image from "next/image";
@@ -19,15 +18,18 @@ export interface Book {
   createdAt: string;
 }
 
+const API_URL = process.env.NEXT_PUBLIC_SERVER_SITE_URL;
+
 export default function BookCard({ book }: { book: Book }) {
   const [imageError, setImageError] = useState(false);
 
-  const imageUrl = `/api/book-image/${book._id}`;
+  const imageUrl = `${API_URL}/book-image/${book._id}`;
 
   return (
     <div className="group overflow-hidden rounded-2xl border border-[#e8e5da] bg-white shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-xl">
+      {/* Book Image */}
       <div className="relative flex h-64 items-center justify-center overflow-hidden bg-[#eeeee5]">
-        {!imageError ? (
+        {!imageError && API_URL ? (
           <Image
             src={imageUrl}
             alt={book.title}
@@ -48,6 +50,7 @@ export default function BookCard({ book }: { book: Book }) {
         </span>
       </div>
 
+      {/* Book Information */}
       <div className="p-5">
         <h3 className="mb-3 line-clamp-2 text-xl font-bold text-[#173f35]">
           {book.title}
