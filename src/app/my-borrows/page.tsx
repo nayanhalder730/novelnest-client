@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
@@ -14,8 +13,6 @@ import { authClient } from "@/lib/auth-client";
 import MyBorrowCard, {
   type Borrow,
 } from "@/components/homePage/MyBorrowCard";
-
-const API_URL = process.env.NEXT_PUBLIC_SERVER_SITE_URL;
 
 interface BorrowsResponse {
   success: boolean;
@@ -41,19 +38,11 @@ export default function MyBorrowsPage() {
       return;
     }
 
-    if (!API_URL) {
-      setError(
-        "Server URL is missing. Please check your environment variables."
-      );
-      setLoading(false);
-      return;
-    }
-
     try {
       setLoading(true);
       setError("");
 
-      const response = await fetch(`${API_URL}/borrows`, {
+      const response = await fetch("/api/backend/borrows", {
         method: "GET",
         credentials: "include",
         cache: "no-store",

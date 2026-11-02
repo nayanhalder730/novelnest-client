@@ -21,8 +21,6 @@ import type {
   CollectionBooksResponse,
 } from "../../types/books";
 
-const API_URL = process.env.NEXT_PUBLIC_SERVER_SITE_URL;
-
 export default function MyCollectionPage() {
   const { data: session, isPending } = authClient.useSession();
 
@@ -40,19 +38,12 @@ export default function MyCollectionPage() {
       return;
     }
 
-    if (!API_URL) {
-      setError(
-        "Server API URL is missing. Check your .env.local file."
-      );
-      setLoading(false);
-      return;
-    }
-
     try {
       setLoading(true);
       setError("");
 
-      const response = await fetch(`${API_URL}/my-books`, {
+      // Use Next.js proxy instead of calling backend directly.
+      const response = await fetch("/api/backend/my-books", {
         method: "GET",
         credentials: "include",
         cache: "no-store",
@@ -89,10 +80,13 @@ export default function MyCollectionPage() {
     if (isPending) return;
 
     if (!userEmail) {
+      setBooks([]);
+      setLoading(false);
       return;
     }
 
     const timeoutId = window.setTimeout(fetchMyBooks, 0);
+
     return () => window.clearTimeout(timeoutId);
   }, [isPending, userEmail, fetchMyBooks]);
 
@@ -116,13 +110,11 @@ export default function MyCollectionPage() {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
         <div className="text-center">
-
           <div className="mx-auto h-12 w-12 animate-spin rounded-full border-4 border-[#173F35]/20 border-t-[#173F35]" />
 
           <p className="mt-4 font-medium text-[#173F35]">
             Loading your collection...
           </p>
-
         </div>
       </div>
     );
@@ -132,9 +124,7 @@ export default function MyCollectionPage() {
   if (!userEmail) {
     return (
       <section className="flex min-h-[60vh] items-center justify-center px-4">
-
         <div className="max-w-md rounded-2xl border border-[#173F35]/10 bg-white p-8 text-center shadow-sm">
-
           <BookOpen
             className="mx-auto mb-4 text-[#B18B43]"
             size={48}
@@ -154,7 +144,6 @@ export default function MyCollectionPage() {
           >
             Sign In
           </Link>
-
         </div>
       </section>
     );
@@ -162,12 +151,10 @@ export default function MyCollectionPage() {
 
   return (
     <main className="min-h-screen bg-[#F8F6EF] px-4 py-12 sm:px-6 lg:px-8">
-
       <div className="mx-auto max-w-7xl">
 
         {/* Header */}
         <div className="mb-10 flex flex-col justify-between gap-5 sm:flex-row sm:items-center">
-
           <div>
             <div className="mb-3 flex items-center gap-2 text-sm font-bold uppercase tracking-widest text-[#B18B43]">
               <Library size={18} />
@@ -190,7 +177,6 @@ export default function MyCollectionPage() {
             <Plus size={20} />
             Add New Book
           </Link>
-
         </div>
 
         {/* Summary Cards */}
@@ -198,7 +184,6 @@ export default function MyCollectionPage() {
 
           {/* Total Books */}
           <div className="rounded-2xl border border-[#173F35]/10 bg-white p-6 shadow-sm">
-
             <p className="text-sm font-medium text-gray-500">
               Total Books
             </p>
@@ -211,12 +196,10 @@ export default function MyCollectionPage() {
               className="mt-3 text-[#B18B43]"
               size={25}
             />
-
           </div>
 
           {/* Total Copies */}
           <div className="rounded-2xl border border-[#173F35]/10 bg-white p-6 shadow-sm">
-
             <p className="text-sm font-medium text-gray-500">
               Total Copies
             </p>
@@ -229,12 +212,10 @@ export default function MyCollectionPage() {
               className="mt-3 text-[#B18B43]"
               size={25}
             />
-
           </div>
 
           {/* Available Copies */}
           <div className="rounded-2xl border border-[#173F35]/10 bg-white p-6 shadow-sm">
-
             <p className="text-sm font-medium text-gray-500">
               Available Copies
             </p>
@@ -247,15 +228,12 @@ export default function MyCollectionPage() {
               className="mt-3 text-[#B18B43]"
               size={25}
             />
-
           </div>
-
         </div>
 
         {/* Error */}
         {error && (
           <div className="mb-8 flex items-center gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-red-700">
-
             <AlertCircle size={20} />
 
             <p>{error}</p>
@@ -266,13 +244,11 @@ export default function MyCollectionPage() {
             >
               Retry
             </button>
-
           </div>
         )}
 
         {/* Books Heading */}
         <div className="mb-6 flex items-center justify-between">
-
           <h2 className="text-2xl font-bold text-[#173F35]">
             Your Books
           </h2>
@@ -280,28 +256,21 @@ export default function MyCollectionPage() {
           <span className="rounded-full bg-[#173F35]/10 px-4 py-2 text-sm font-bold text-[#173F35]">
             {totalBooks} Books
           </span>
-
         </div>
 
         {/* Book Cards */}
         {books.length > 0 ? (
-
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-
             {books.map((book) => (
               <MyCollectionCard
                 key={book._id}
                 book={book}
               />
             ))}
-
           </div>
-
         ) : (
-
           !error && (
             <div className="rounded-2xl border border-dashed border-[#173F35]/20 bg-white px-6 py-16 text-center">
-
               <BookOpen
                 size={55}
                 className="mx-auto mb-5 text-[#B18B43]"
@@ -323,12 +292,9 @@ export default function MyCollectionPage() {
                 <Plus size={20} />
                 Add Your First Book
               </Link>
-
             </div>
           )
-
         )}
-
       </div>
     </main>
   );
