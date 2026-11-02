@@ -1,4 +1,3 @@
-
 "use client";
 
 import Image from "next/image";
@@ -76,10 +75,15 @@ export default function EditPage({ params }: EditPageProps) {
 
         setBookId(slug);
 
-        const response = await fetch(`${API_URL}/books/${slug}`, {
-          cache: "no-store",
-          credentials: "include",
-        });
+        // Use Next.js proxy instead of calling backend directly.
+        const response = await fetch(
+          `/api/backend/books/${encodeURIComponent(slug)}`,
+          {
+            method: "GET",
+            cache: "no-store",
+            credentials: "include",
+          }
+        );
 
         const result: BookResponse = await response.json();
 
@@ -98,7 +102,10 @@ export default function EditPage({ params }: EditPageProps) {
         setDescription(data.description);
         setTotalCopies(String(data.totalCopies ?? 1));
 
-        setImagePreview(`${API_URL}/book-image/${data._id}`);
+        // Image is served through the public backend image route.
+        setImagePreview(
+          `${API_URL.replace(/\/$/, "")}/book-image/${data._id}`
+        );
       } catch (err) {
         if (!active) return;
 
@@ -181,7 +188,9 @@ export default function EditPage({ params }: EditPageProps) {
 
     const borrowedCopies =
       book.totalCopies - book.availableCopies;
-    const newAvailableCopies = newTotalCopies - borrowedCopies;
+
+    const newAvailableCopies =
+      newTotalCopies - borrowedCopies;
 
     if (
       !Number.isInteger(newTotalCopies) ||
@@ -206,6 +215,7 @@ export default function EditPage({ params }: EditPageProps) {
       formData.append("category", category);
       formData.append("description", description.trim());
       formData.append("totalCopies", String(newTotalCopies));
+
       formData.append(
         "availableCopies",
         String(Math.max(0, newAvailableCopies))
@@ -215,11 +225,15 @@ export default function EditPage({ params }: EditPageProps) {
         formData.append("image", image);
       }
 
-      const response = await fetch(`${API_URL}/books/${bookId}`, {
-        method: "PATCH",
-        body: formData,
-        credentials: "include",
-      });
+      // Use Next.js proxy for authenticated PATCH request.
+      const response = await fetch(
+        `/api/backend/books/${encodeURIComponent(bookId)}`,
+        {
+          method: "PATCH",
+          body: formData,
+          credentials: "include",
+        }
+      );
 
       const result = await response.json();
 
@@ -234,8 +248,8 @@ export default function EditPage({ params }: EditPageProps) {
 
       setSuccess("Book updated successfully!");
 
-      router.refresh();
       router.push(`/all-books/${bookId}`);
+      router.refresh();
     } catch (err) {
       setError(
         err instanceof Error
