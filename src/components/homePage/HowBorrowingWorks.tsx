@@ -28,7 +28,10 @@ interface BooksResponse {
   message?: string;
 }
 
-const API_URL = process.env.NEXT_PUBLIC_SERVER_SITE_URL;
+// Always keep API_URL as a string
+const API_URL = (
+  process.env.NEXT_PUBLIC_SERVER_SITE_URL || ""
+).replace(/\/$/, "");
 
 const NewArrivals = () => {
   const [books, setBooks] = useState<Book[]>([]);
@@ -48,7 +51,7 @@ const NewArrivals = () => {
         setError("");
 
         const response = await fetch(
-          `${API_URL.replace(/\/$/, "")}/books`,
+          `${API_URL}/books`,
           {
             cache: "no-store",
           }
@@ -86,6 +89,7 @@ const NewArrivals = () => {
   return (
     <section className="py-16 md:py-20">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+
         <div className="mb-10 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
           <div>
             <p className="mb-2 text-sm font-semibold uppercase tracking-widest text-[#087f75]">
@@ -112,7 +116,10 @@ const NewArrivals = () => {
 
         {loading ? (
           <div className="flex min-h-60 items-center justify-center">
-            <Loader2 className="animate-spin text-[#087f75]" size={32} />
+            <Loader2
+              className="animate-spin text-[#087f75]"
+              size={32}
+            />
           </div>
         ) : error ? (
           <div className="rounded-xl border border-red-200 bg-red-50 p-6 text-center text-red-600">
@@ -124,6 +131,7 @@ const NewArrivals = () => {
               size={40}
               className="mx-auto mb-3 text-gray-400"
             />
+
             <p className="font-medium text-gray-700">
               No books available yet.
             </p>
@@ -138,7 +146,7 @@ const NewArrivals = () => {
                 <Link href={`/all-books/${book._id}`}>
                   <div className="relative h-64 bg-gray-100">
                     <Image
-                      src={`${API_URL.replace(/\/$/, "")}/book-image/${book._id}`}
+                      src={`${API_URL}/book-image/${book._id}`}
                       alt={book.title}
                       fill
                       unoptimized
@@ -181,6 +189,7 @@ const NewArrivals = () => {
             ))}
           </div>
         )}
+
       </div>
     </section>
   );
