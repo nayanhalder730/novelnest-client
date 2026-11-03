@@ -1,198 +1,107 @@
 
-"use client";
-
-import { useEffect, useState } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import {
-  ArrowRight,
+  Search,
   BookOpen,
-  Loader2,
+  BookmarkCheck,
+  ArrowRight,
 } from "lucide-react";
 
-interface Book {
-  _id: string;
-  title: string;
-  author: string;
-  category: string;
-  description: string;
-  createdAt: string;
-  totalCopies?: number;
-  availableCopies?: number;
-}
+const steps = [
+  {
+    id: 1,
+    title: "Discover a Book",
+    description:
+      "Explore our collection and find the perfect book that matches your interests and reading preferences.",
+    icon: Search,
+  },
+  {
+    id: 2,
+    title: "Request to Borrow",
+    description:
+      "Found something interesting? Simply request to borrow your favorite book with just a few clicks.",
+    icon: BookmarkCheck,
+  },
+  {
+    id: 3,
+    title: "Enjoy Reading",
+    description:
+      "Get your book and enjoy your reading journey. Return it when you're finished so others can enjoy it too.",
+    icon: BookOpen,
+  },
+];
 
-interface BooksResponse {
-  success: boolean;
-  count: number;
-  books: Book[];
-  message?: string;
-}
-
-// Always keep API_URL as a string
-const API_URL = (
-  process.env.NEXT_PUBLIC_SERVER_SITE_URL || ""
-).replace(/\/$/, "");
-
-const NewArrivals = () => {
-  const [books, setBooks] = useState<Book[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-
-  useEffect(() => {
-    const fetchBooks = async () => {
-      if (!API_URL) {
-        setError("Backend URL is not configured.");
-        setLoading(false);
-        return;
-      }
-
-      try {
-        setLoading(true);
-        setError("");
-
-        const response = await fetch(
-          `${API_URL}/books`,
-          {
-            cache: "no-store",
-          }
-        );
-
-        if (!response.ok) {
-          throw new Error("Failed to fetch books.");
-        }
-
-        const result: BooksResponse = await response.json();
-
-        if (!result.success || !Array.isArray(result.books)) {
-          throw new Error(
-            result.message || "Invalid books response."
-          );
-        }
-
-        setBooks(result.books.slice(0, 6));
-      } catch (error) {
-        console.error("New arrivals error:", error);
-
-        setError(
-          error instanceof Error
-            ? error.message
-            : "Something went wrong."
-        );
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchBooks();
-  }, []);
-
+export default function HowBorrowingWorks() {
   return (
-    <section className="py-16 md:py-20">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+    <section className="bg-[#F8F6EF] px-4 py-20 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-7xl">
 
-        <div className="mb-10 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
-          <div>
-            <p className="mb-2 text-sm font-semibold uppercase tracking-widest text-[#087f75]">
-              Discover Something New
-            </p>
+        {/* Section Heading */}
+        <div className="mx-auto mb-16 max-w-2xl text-center">
+          <span className="mb-4 inline-block rounded-full bg-[#173F35]/10 px-5 py-2 text-sm font-semibold tracking-wide text-[#173F35]">
+            Simple & Easy Process
+          </span>
 
-            <h2 className="text-3xl font-bold text-gray-900 md:text-4xl">
-              New Arrivals
-            </h2>
+          <h2 className="text-3xl font-bold leading-tight text-[#173F35] sm:text-4xl lg:text-5xl">
+            How Borrowing Works
+          </h2>
 
-            <p className="mt-3 max-w-xl text-gray-600">
-              Explore the latest books added to our library.
-            </p>
-          </div>
-
-          <Link
-            href="/all-books"
-            className="inline-flex items-center gap-2 font-semibold text-[#087f75] transition hover:gap-3"
-          >
-            Explore All Books
-            <ArrowRight size={18} />
-          </Link>
+          <p className="mt-5 text-base leading-7 text-gray-600 sm:text-lg">
+            Borrowing your next favorite book has never been easier.
+            Follow these simple steps and start your reading journey.
+          </p>
         </div>
 
-        {loading ? (
-          <div className="flex min-h-60 items-center justify-center">
-            <Loader2
-              className="animate-spin text-[#087f75]"
-              size={32}
-            />
-          </div>
-        ) : error ? (
-          <div className="rounded-xl border border-red-200 bg-red-50 p-6 text-center text-red-600">
-            {error}
-          </div>
-        ) : books.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-gray-300 py-16 text-center">
-            <BookOpen
-              size={40}
-              className="mx-auto mb-3 text-gray-400"
-            />
+        {/* Steps */}
+        <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
 
-            <p className="font-medium text-gray-700">
-              No books available yet.
-            </p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {books.map((book) => (
-              <article
-                key={book._id}
-                className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
+          {steps.map((step) => {
+            const Icon = step.icon;
+
+            return (
+              <div
+                key={step.id}
+                className="group relative rounded-2xl border border-[#173F35]/10 bg-white p-8 text-center shadow-sm transition-all duration-300 hover:-translate-y-2 hover:border-[#D8B76A] hover:shadow-xl"
               >
-                <Link href={`/all-books/${book._id}`}>
-                  <div className="relative h-64 bg-gray-100">
-                    <Image
-                      src={`${API_URL}/book-image/${book._id}`}
-                      alt={book.title}
-                      fill
-                      unoptimized
-                      className="object-cover"
-                    />
-                  </div>
+                {/* Step Number */}
+                <div className="absolute right-6 top-6 text-5xl font-bold text-[#173F35]/5">
+                  0{step.id}
+                </div>
 
-                  <div className="p-5">
-                    <span className="rounded-full bg-[#087f75]/10 px-3 py-1 text-xs font-semibold text-[#087f75]">
-                      {book.category}
-                    </span>
+                {/* Icon */}
+                <div className="mx-auto mb-7 flex h-20 w-20 items-center justify-center rounded-2xl bg-[#173F35]/10 text-[#173F35] transition-all duration-300 group-hover:bg-[#173F35] group-hover:text-white">
+                  <Icon size={36} strokeWidth={1.8} />
+                </div>
 
-                    <h3 className="mt-4 line-clamp-1 text-xl font-bold text-gray-900">
-                      {book.title}
-                    </h3>
+                {/* Content */}
+                <h3 className="mb-4 text-xl font-bold text-[#173F35] transition-colors group-hover:text-[#B18B43]">
+                  {step.title}
+                </h3>
 
-                    <p className="mt-1 text-sm text-gray-500">
-                      By {book.author}
-                    </p>
+                <p className="text-sm leading-7 text-gray-500 sm:text-base">
+                  {step.description}
+                </p>
+              </div>
+            );
+          })}
 
-                    <p className="mt-3 line-clamp-2 text-sm leading-6 text-gray-600">
-                      {book.description}
-                    </p>
+        </div>
 
-                    <div className="mt-5 flex items-center justify-between border-t border-gray-100 pt-4">
-                      <span className="text-sm font-medium text-gray-500">
-                        {typeof book.availableCopies === "number"
-                          ? `${book.availableCopies} copies available`
-                          : "View book details"}
-                      </span>
-
-                      <span className="inline-flex items-center gap-1 text-sm font-semibold text-[#087f75]">
-                        Details
-                        <ArrowRight size={16} />
-                      </span>
-                    </div>
-                  </div>
-                </Link>
-              </article>
-            ))}
-          </div>
-        )}
+        {/* Explore Books Button */}
+        <div className="mt-14 text-center">
+          <Link
+            href="/all-books"
+            className="inline-flex items-center justify-center gap-3 rounded-xl bg-[#173F35] px-8 py-4 font-semibold text-white shadow-md transition-all duration-300 hover:bg-[#B18B43] hover:text-[#173F35]"
+          >
+            Find Your Next Book
+            <ArrowRight
+              size={20}
+              className="transition-transform duration-300 group-hover:translate-x-1"
+            />
+          </Link>
+        </div>
 
       </div>
     </section>
   );
-};
-
-export default NewArrivals;
+}

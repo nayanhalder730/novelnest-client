@@ -116,7 +116,7 @@ export default function SignUpPage() {
   ) => {
     e.preventDefault();
 
-    if (loading) return;
+    if (loading || socialLoading) return;
 
     if (!name.trim() || !email.trim() || !password) {
       toast.error("Please fill in all required fields.");
@@ -149,7 +149,7 @@ export default function SignUpPage() {
 
       toast.success("Account created successfully!");
 
-      router.push("/");
+      router.replace("/");
       router.refresh();
     } catch (error) {
       console.error("Signup Error:", error);
@@ -165,35 +165,37 @@ export default function SignUpPage() {
   };
 
   // Google and GitHub signup
-  const handleSocialSignUp = async (
-    provider: "google" | "github"
-  ) => {
-    if (socialLoading || loading) return;
+const handleSocialSignUp = async (
+  provider: "google" | "github"
+) => {
+  if (socialLoading || loading) return;
 
-    try {
-      setSocialLoading(provider);
+  try {
+    setSocialLoading(provider);
 
-      const { error } = await authClient.signIn.social({
-        provider,
-        callbackURL: `/?socialAuth=success&provider=${provider}`,
-      });
+    const result = await authClient.signIn.social({
+      provider,
+      callbackURL: "/",
+      errorCallbackURL: "/sign-up",
+    });
 
-      if (error) {
-        toast.error(error.message || `${provider} signup failed.`);
-        setSocialLoading("");
-      }
-    } catch (error) {
-      console.error(`${provider} Signup Error:`, error);
-
-      toast.error(
-        error instanceof Error
-          ? error.message
-          : `${provider} signup failed.`
-      );
-
+    if (result.error) {
+      console.error("OAuth Error:", result.error);
+      toast.error(result.error.message || "Social login failed.");
       setSocialLoading("");
     }
-  };
+  } catch (error) {
+    console.error("Social Login Error:", error);
+
+    toast.error(
+      error instanceof Error
+        ? error.message
+        : "Social login failed."
+    );
+
+    setSocialLoading("");
+  }
+};
 
   return (
     <main className="min-h-screen bg-[#F8F6EF] px-4 py-12">
@@ -312,7 +314,7 @@ export default function SignUpPage() {
                   type="file"
                   accept="image/png,image/jpeg,image/webp"
                   onChange={handleImageChange}
-                  disabled={loading}
+                  disabled={loading || !!socialLoading}
                   className="hidden"
                 />
               </label>
@@ -340,7 +342,7 @@ export default function SignUpPage() {
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     required
-                    disabled={loading}
+                    disabled={loading || !!socialLoading}
                     className="w-full bg-transparent py-3.5 text-sm outline-none"
                   />
                 </div>
@@ -361,7 +363,7 @@ export default function SignUpPage() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
-                    disabled={loading}
+                    disabled={loading || !!socialLoading}
                     className="w-full bg-transparent py-3.5 text-sm outline-none"
                   />
                 </div>
@@ -383,7 +385,7 @@ export default function SignUpPage() {
                     onChange={(e) => setPassword(e.target.value)}
                     required
                     minLength={8}
-                    disabled={loading}
+                    disabled={loading || !!socialLoading}
                     className="w-full bg-transparent py-3.5 text-sm outline-none"
                   />
 
@@ -444,7 +446,7 @@ export default function SignUpPage() {
                 type="button"
                 disabled={!!socialLoading || loading}
                 onClick={() => handleSocialSignUp("google")}
-                className="flex items-center justify-center gap-2 rounded-xl border border-gray-200 py-3 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 disabled:opacity-50"
+                className="flex items-center justify-center gap-2 rounded-xl border border-gray-200 py-3 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {socialLoading === "google" ? (
                   <Loader2 size={17} className="animate-spin" />
@@ -462,7 +464,7 @@ export default function SignUpPage() {
                 type="button"
                 disabled={!!socialLoading || loading}
                 onClick={() => handleSocialSignUp("github")}
-                className="flex items-center justify-center gap-2 rounded-xl border border-gray-200 py-3 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 disabled:opacity-50"
+                className="flex items-center justify-center gap-2 rounded-xl border border-gray-200 py-3 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {socialLoading === "github" ? (
                   <Loader2 size={17} className="animate-spin" />
