@@ -28,6 +28,9 @@ interface Book {
   availableCopies?: number;
   createdAt?: string;
   updatedAt?: string;
+  imageUrl?: string;
+  imageName?: string;
+  imageMimeType?: string;
 }
 
 interface BookResponse {
@@ -37,7 +40,15 @@ interface BookResponse {
 }
 
 const API_URL =
-  process.env.BACKEND_URL || "http://localhost:8000";
+  process.env.BACKEND_URL ||
+  process.env.NEXT_PUBLIC_SERVER_SITE_URL ||
+  "http://localhost:8000";
+
+const AUTH_URL = (
+  process.env.BETTER_AUTH_URL ||
+  process.env.NEXT_PUBLIC_BETTER_AUTH_URL ||
+  "http://localhost:3000"
+).replace(/\/+$/, "");
 
 export default async function BookDetails({
   params,
@@ -56,12 +67,44 @@ export default async function BookDetails({
 
   try {
     const requestHeaders = await headers();
+    const cookie = requestHeaders.get("cookie") || "";
 
+    // Get JWT from Better Auth
+    if (!cookie) {
+      throw new Error("Please login to view book details.");
+    }
+
+    const tokenResponse = await fetch(
+      `${AUTH_URL}/api/auth/token`,
+      {
+        method: "GET",
+        headers: {
+          cookie,
+        },
+        cache: "no-store",
+      }
+    );
+
+    if (!tokenResponse.ok) {
+      throw new Error(
+        "Unable to generate JWT. Please login again."
+      );
+    }
+
+    const tokenData: { token?: string } =
+      await tokenResponse.json();
+
+    if (!tokenData.token) {
+      throw new Error("Authentication token not found.");
+    }
+
+    // Fetch book details using JWT
     const res = await fetch(`${API_URL}/books/${slug}`, {
       method: "GET",
       cache: "no-store",
       headers: {
-        cookie: requestHeaders.get("cookie") || "",
+        Authorization: `Bearer ${tokenData.token}`,
+        Accept: "application/json",
       },
     });
 
@@ -73,7 +116,6 @@ export default async function BookDetails({
       console.error("BOOK API ERROR:", {
         status: res.status,
         slug,
-        url: `${API_URL}/books/${slug}`,
         response: responseError,
       });
     } else {
@@ -105,10 +147,11 @@ export default async function BookDetails({
 
   const book = result.book;
 
-  // Stable image cache version. No Date.now() during prerendering.
+  // Stable image cache version
   const imageVersion =
     book.updatedAt || book.createdAt || book._id;
 
+  // Backend redirects new ImgBB images and serves legacy images
   const imageUrl =
     `${API_URL}/book-image/${book._id}?v=${encodeURIComponent(imageVersion)}`;
 

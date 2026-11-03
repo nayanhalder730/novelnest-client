@@ -3,6 +3,7 @@ import "dotenv/config";
 import { betterAuth } from "better-auth";
 import { mongodbAdapter } from "better-auth/adapters/mongodb";
 import { MongoClient } from "mongodb";
+import { jwt } from "better-auth/plugins";
 
 if (!process.env.MONGODB_URI) {
   throw new Error("MONGODB_URI is missing");
@@ -13,20 +14,26 @@ if (!process.env.BETTER_AUTH_SECRET) {
 }
 
 const client = new MongoClient(process.env.MONGODB_URI);
-
 const db = client.db(process.env.DB_NAME || "novelnest");
+
+const baseURL =
+  process.env.BETTER_AUTH_URL || "http://localhost:3000";
+
+const trustedOrigins = (
+  process.env.CLIENT_SITE_URL || "http://localhost:3000"
+)
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
 
 export const auth = betterAuth({
   database: mongodbAdapter(db),
 
   secret: process.env.BETTER_AUTH_SECRET,
 
-  baseURL:
-    process.env.BETTER_AUTH_URL || "http://localhost:3000",
+  baseURL,
 
-  trustedOrigins: [
-    process.env.CLIENT_SITE_URL || "http://localhost:3000",
-  ],
+  trustedOrigins,
 
   emailAndPassword: {
     enabled: true,
@@ -43,4 +50,18 @@ export const auth = betterAuth({
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
     },
   },
+
+  plugins: [
+    jwt({
+      jwt: {
+        definePayload: ({ user }) => ({
+          id: user.id,
+          name: user.name,
+          email: user.email,
+        }),
+
+        expirationTime: "15m",
+      },
+    }),
+  ],
 });

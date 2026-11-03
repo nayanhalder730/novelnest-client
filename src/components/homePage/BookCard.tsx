@@ -1,9 +1,8 @@
-
 "use client";
 
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   UserRound,
   ArrowUpRight,
@@ -17,6 +16,8 @@ export interface Book {
   category: string;
   description: string;
   createdAt: string;
+  updatedAt?: string;
+  imageUrl?: string;
 }
 
 const API_URL = process.env.NEXT_PUBLIC_SERVER_SITE_URL;
@@ -24,10 +25,19 @@ const API_URL = process.env.NEXT_PUBLIC_SERVER_SITE_URL;
 export default function BookCard({ book }: { book: Book }) {
   const [imageError, setImageError] = useState(false);
 
+  // Prefer the latest ImgBB URL stored in MongoDB.
   const imageUrl =
-    API_URL && book._id
-      ? `${API_URL.replace(/\/$/, "")}/book-image/${book._id}`
-      : "";
+    book.imageUrl?.trim() ||
+    (API_URL && book._id
+      ? `${API_URL.replace(/\/+$/, "")}/book-image/${book._id}?v=${encodeURIComponent(
+          book.updatedAt || book.createdAt || book._id
+        )}`
+      : "");
+
+  // Reset image error whenever the image URL changes.
+  useEffect(() => {
+    setImageError(false);
+  }, [imageUrl]);
 
   return (
     <div className="group overflow-hidden rounded-2xl border border-[#e8e5da] bg-white shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-xl">
@@ -35,6 +45,7 @@ export default function BookCard({ book }: { book: Book }) {
       <div className="relative flex h-64 items-center justify-center overflow-hidden bg-[#eeeee5]">
         {!imageError && imageUrl ? (
           <Image
+            key={imageUrl}
             src={imageUrl}
             alt={book.title || "Book cover"}
             fill

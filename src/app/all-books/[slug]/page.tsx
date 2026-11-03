@@ -1,16 +1,21 @@
+
 import BookDetails from "@/components/homePage/BooksDetails";
 import { Suspense } from "react";
 import type { Metadata } from "next";
+import { connection } from "next/server";
 
-export async function generateMetadata({
+export const metadata: Metadata = {
+  title: "NovelNest | Book Details",
+};
+
+async function DynamicBookDetails({
   params,
 }: {
   params: Promise<{ slug: string }>;
-}): Promise<Metadata> {
-  await params;
-  return {
-    title: "NovelNest | Book Details",
-  };
+}) {
+  await connection();
+
+  return <BookDetails params={params} />;
 }
 
 export default function Page({
@@ -21,14 +26,14 @@ export default function Page({
   return (
     <Suspense
       fallback={
-        <div className="flex min-h-screen items-center justify-center bg-[#F8F6EF]">
-          <p className="text-lg font-medium text-[#173F35]">
+        <div className="flex min-h-screen items-center justify-center">
+          <p className="text-gray-500">
             Loading book details...
           </p>
         </div>
       }
     >
-      <BookDetails params={params} />
+      <DynamicBookDetails params={params} />
     </Suspense>
   );
 }

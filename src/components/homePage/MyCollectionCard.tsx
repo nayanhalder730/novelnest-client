@@ -21,11 +21,16 @@ interface MyCollectionCardProps {
 export default function MyCollectionCard({
   book,
 }: MyCollectionCardProps) {
+  // Generate a new image URL whenever the book is updated.
+  const imageVersion =
+    book.updatedAt || book.createdAt || book._id;
+
   const imageUrl =
     API_URL && book._id
-      ? `${API_URL.replace(/\/$/, "")}/book-image/${book._id}`
+      ? `${API_URL.replace(/\/+$/, "")}/book-image/${book._id}?v=${encodeURIComponent(imageVersion)}`
       : "";
 
+  // Format book creation date.
   const parsedDate = book.createdAt
     ? new Date(book.createdAt)
     : null;
@@ -39,6 +44,7 @@ export default function MyCollectionCard({
         })
       : "Date unavailable";
 
+  // Book copies.
   const totalCopies = Math.max(
     0,
     Number(book.totalCopies ?? 0) || 0
@@ -56,6 +62,7 @@ export default function MyCollectionCard({
       <div className="relative h-64 overflow-hidden bg-[#EAE8DD]">
         {imageUrl ? (
           <Image
+            key={imageUrl}
             src={imageUrl}
             alt={book.title || "Book cover"}
             fill

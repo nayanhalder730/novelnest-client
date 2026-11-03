@@ -27,13 +27,11 @@ export default function BorrowButton({
   const handleBorrow = async () => {
     if (isPending || borrowing) return;
 
-    // Check login
     if (!session?.user) {
       router.push("/sign-in");
       return;
     }
 
-    // Check available copies
     if (availableCopies <= 0) {
       setMessage("This book is currently unavailable.");
       setIsError(true);
@@ -45,7 +43,6 @@ export default function BorrowButton({
       setMessage("");
       setIsError(false);
 
-      // Send request through Next.js backend proxy
       const response = await fetch("/api/backend/borrows", {
         method: "POST",
         headers: {
@@ -53,12 +50,19 @@ export default function BorrowButton({
         },
         credentials: "include",
         cache: "no-store",
-        body: JSON.stringify({
-          bookId,
-        }),
+        body: JSON.stringify({ bookId }),
       });
 
       const result = await response.json();
+
+      // Handle existing active borrow
+      if (response.status === 409) {
+        setMessage(
+          result.message || "You have already borrowed this book. Please return it first."
+        );
+        setIsError(true);
+        return;
+      }
 
       if (!response.ok || !result.success) {
         throw new Error(
@@ -69,7 +73,6 @@ export default function BorrowButton({
       setMessage("Book borrowed successfully!");
       setIsError(false);
 
-      // Refresh book details and available copies
       router.refresh();
     } catch (error) {
       console.error("Borrow book error:", error);

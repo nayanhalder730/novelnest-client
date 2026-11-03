@@ -1,9 +1,17 @@
+
 "use client";
 
-import { useState, type FormEvent, type ChangeEvent } from "react";
+import {
+  useState,
+  useEffect,
+  type FormEvent,
+  type ChangeEvent,
+} from "react";
+
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+
 import {
   Eye,
   EyeOff,
@@ -15,11 +23,9 @@ import {
   BookOpen,
   Loader2,
 } from "lucide-react";
+
 import { toast } from "react-toastify";
-
 import { authClient } from "@/lib/auth-client";
-
-const IMGBB_API_KEY = process.env.NEXT_PUBLIC_IMGBB_API_KEY;
 
 export default function SignUpPage() {
   const router = useRouter();
@@ -35,14 +41,25 @@ export default function SignUpPage() {
   const [loading, setLoading] = useState(false);
   const [socialLoading, setSocialLoading] = useState("");
 
+  // Cleanup image preview URL
+  useEffect(() => {
+    return () => {
+      if (imagePreview) {
+        URL.revokeObjectURL(imagePreview);
+      }
+    };
+  }, [imagePreview]);
+
   // Profile image select
-  const handleImageChange = (e: ChangeEvent<HTMLInputElement>) => {
+  const handleImageChange = (
+    e: ChangeEvent<HTMLInputElement>
+  ) => {
     const file = e.target.files?.[0];
 
     if (!file) return;
 
-    if (!file.type.startsWith("image/")) {
-      toast.error("Please select a valid image.");
+    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+      toast.error("Please select a JPG, PNG or WEBP image.");
       e.target.value = "";
       return;
     }
@@ -61,45 +78,45 @@ export default function SignUpPage() {
 
   // Remove selected image
   const handleRemoveImage = () => {
-    if (imagePreview) {
-      URL.revokeObjectURL(imagePreview);
-    }
-
     setProfileImage(null);
     setImagePreview("");
   };
 
-  // Upload image to ImgBB
+  // Secure server-side ImgBB upload
   const uploadImage = async (): Promise<string | null> => {
     if (!profileImage) return null;
-
-    if (!IMGBB_API_KEY) {
-      throw new Error("ImgBB API key is missing.");
-    }
 
     const formData = new FormData();
     formData.append("image", profileImage);
 
-    const response = await fetch(
-      `https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`,
-      {
-        method: "POST",
-        body: formData,
-      }
-    );
+    const response = await fetch("/api/upload/profile-image", {
+      method: "POST",
+      body: formData,
+      cache: "no-store",
+    });
 
-    const result = await response.json();
+    const result: {
+      success: boolean;
+      url?: string;
+      message?: string;
+    } = await response.json();
 
-    if (!response.ok || !result.success) {
-      throw new Error("Profile image upload failed.");
+    if (!response.ok || !result.success || !result.url) {
+      throw new Error(
+        result.message || "Profile image upload failed."
+      );
     }
 
-    return result.data.url;
+    return result.url;
   };
 
   // Email and password signup
-  const handleSignUp = async (e: FormEvent<HTMLFormElement>) => {
+  const handleSignUp = async (
+    e: FormEvent<HTMLFormElement>
+  ) => {
     e.preventDefault();
+
+    if (loading) return;
 
     if (!name.trim() || !email.trim() || !password) {
       toast.error("Please fill in all required fields.");
@@ -117,7 +134,7 @@ export default function SignUpPage() {
       // Upload profile image first
       const imageUrl = await uploadImage();
 
-      // Create account
+      // Create Better Auth account
       const { error } = await authClient.signUp.email({
         name: name.trim(),
         email: email.trim(),
@@ -133,8 +150,9 @@ export default function SignUpPage() {
       toast.success("Account created successfully!");
 
       router.push("/");
+      router.refresh();
     } catch (error) {
-      console.error("Signup error:", error);
+      console.error("Signup Error:", error);
 
       toast.error(
         error instanceof Error
@@ -147,17 +165,32 @@ export default function SignUpPage() {
   };
 
   // Google and GitHub signup
-  const handleSocialSignUp = async (provider: "google" | "github") => {
+  const handleSocialSignUp = async (
+    provider: "google" | "github"
+  ) => {
+    if (socialLoading || loading) return;
+
     try {
       setSocialLoading(provider);
 
-      await authClient.signIn.social({
+      const { error } = await authClient.signIn.social({
         provider,
         callbackURL: `/?socialAuth=success&provider=${provider}`,
       });
+
+      if (error) {
+        toast.error(error.message || `${provider} signup failed.`);
+        setSocialLoading("");
+      }
     } catch (error) {
-      console.error(`${provider} signup error:`, error);
-      toast.error(`${provider} signup failed.`);
+      console.error(`${provider} Signup Error:`, error);
+
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : `${provider} signup failed.`
+      );
+
       setSocialLoading("");
     }
   };
@@ -165,12 +198,17 @@ export default function SignUpPage() {
   return (
     <main className="min-h-screen bg-[#F8F6EF] px-4 py-12">
       <div className="mx-auto grid min-h-[650px] max-w-6xl overflow-hidden rounded-3xl bg-white shadow-xl lg:grid-cols-2">
+
         {/* Left Side */}
         <section className="relative hidden flex-col justify-between overflow-hidden bg-[#173F35] p-12 text-white lg:flex">
           <div className="absolute -right-24 -top-24 h-80 w-80 rounded-full border border-white/10" />
+
           <div className="absolute -bottom-32 -left-20 h-96 w-96 rounded-full border border-white/10" />
 
-          <Link href="/" className="relative z-10 flex items-center gap-3">
+          <Link
+            href="/"
+            className="relative z-10 flex items-center gap-3"
+          >
             <div className="rounded-xl bg-[#D8B76A] p-3 text-[#173F35]">
               <BookOpen size={28} />
             </div>
@@ -179,6 +217,7 @@ export default function SignUpPage() {
               <h1 className="text-2xl font-bold tracking-wide">
                 NOVELNEST
               </h1>
+
               <p className="text-xs tracking-widest text-[#D8B76A]">
                 A WORLD BETWEEN PAGES
               </p>
@@ -208,6 +247,7 @@ export default function SignUpPage() {
         {/* Right Side */}
         <section className="flex items-center justify-center px-5 py-10 sm:px-10 lg:px-12">
           <div className="w-full max-w-md">
+
             <Link
               href="/"
               className="mb-8 flex items-center gap-2 text-sm font-semibold text-[#173F35] lg:hidden"
@@ -244,7 +284,10 @@ export default function SignUpPage() {
                       className="h-full w-full object-cover"
                     />
                   ) : (
-                    <UserRound size={38} className="text-[#173F35]/50" />
+                    <UserRound
+                      size={38}
+                      className="text-[#173F35]/50"
+                    />
                   )}
                 </div>
 
@@ -262,12 +305,14 @@ export default function SignUpPage() {
 
               <label className="mt-3 flex cursor-pointer items-center gap-2 rounded-full border border-[#173F35]/20 px-4 py-2 text-sm font-medium text-[#173F35] transition hover:bg-[#F8F6EF]">
                 <Camera size={16} />
+
                 {profileImage ? "Change Photo" : "Upload Profile Photo"}
 
                 <input
                   type="file"
                   accept="image/png,image/jpeg,image/webp"
                   onChange={handleImageChange}
+                  disabled={loading}
                   className="hidden"
                 />
               </label>
@@ -279,6 +324,7 @@ export default function SignUpPage() {
 
             {/* Signup Form */}
             <form onSubmit={handleSignUp} className="space-y-5">
+
               {/* Name */}
               <div>
                 <label className="mb-2 block text-sm font-semibold text-gray-700">
@@ -294,6 +340,7 @@ export default function SignUpPage() {
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     required
+                    disabled={loading}
                     className="w-full bg-transparent py-3.5 text-sm outline-none"
                   />
                 </div>
@@ -314,6 +361,7 @@ export default function SignUpPage() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
+                    disabled={loading}
                     className="w-full bg-transparent py-3.5 text-sm outline-none"
                   />
                 </div>
@@ -335,6 +383,7 @@ export default function SignUpPage() {
                     onChange={(e) => setPassword(e.target.value)}
                     required
                     minLength={8}
+                    disabled={loading}
                     className="w-full bg-transparent py-3.5 text-sm outline-none"
                   />
 
@@ -362,7 +411,7 @@ export default function SignUpPage() {
               {/* Submit */}
               <button
                 type="submit"
-                disabled={loading}
+                disabled={loading || !!socialLoading}
                 className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#173F35] py-3.5 font-semibold text-white transition hover:bg-[#245748] disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {loading ? (
@@ -379,14 +428,18 @@ export default function SignUpPage() {
             {/* Divider */}
             <div className="my-6 flex items-center gap-4">
               <div className="h-px flex-1 bg-gray-200" />
+
               <span className="text-xs text-gray-400">
                 OR CONTINUE WITH
               </span>
+
               <div className="h-px flex-1 bg-gray-200" />
             </div>
 
             {/* Social Signup */}
             <div className="grid grid-cols-2 gap-4">
+
+              {/* Google */}
               <button
                 type="button"
                 disabled={!!socialLoading || loading}
@@ -396,11 +449,15 @@ export default function SignUpPage() {
                 {socialLoading === "google" ? (
                   <Loader2 size={17} className="animate-spin" />
                 ) : (
-                  <span className="text-lg font-bold text-red-500">G</span>
+                  <span className="text-lg font-bold text-red-500">
+                    G
+                  </span>
                 )}
+
                 Google
               </button>
 
+              {/* GitHub */}
               <button
                 type="button"
                 disabled={!!socialLoading || loading}
@@ -418,6 +475,7 @@ export default function SignUpPage() {
                     <path d="M12 .8a11.2 11.2 0 0 0-3.54 21.83c.56.1.77-.24.77-.54v-2.1c-3.13.68-3.79-1.33-3.79-1.33-.51-1.3-1.25-1.65-1.25-1.65-1.02-.7.08-.69.08-.69 1.13.08 1.72 1.16 1.72 1.16 1 .1.7 2.34 3.1 1.79.1-.73.4-1.23.72-1.52-2.5-.28-5.13-1.25-5.13-5.57 0-1.23.44-2.23 1.16-3.02-.12-.28-.5-1.43.11-2.98 0 0 .95-.3 3.08 1.15a10.7 10.7 0 0 1 5.6 0c2.13-1.45 3.08-1.15 3.08-1.15.61 1.55.23 2.7.11 2.98.72.79 1.16 1.79 1.16 3.02 0 4.33-2.64 5.29-5.15 5.57.41.35.77 1.03.77 2.08v3.1c0 .3.2.65.78.54A11.2 11.2 0 0 0 12 .8Z" />
                   </svg>
                 )}
+
                 GitHub
               </button>
             </div>
@@ -425,6 +483,7 @@ export default function SignUpPage() {
             {/* Sign In Link */}
             <p className="mt-8 text-center text-sm text-gray-500">
               Already have an account?{" "}
+
               <Link
                 href="/sign-in"
                 className="font-bold text-[#173F35] hover:text-[#B18B43]"

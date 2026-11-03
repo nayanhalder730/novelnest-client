@@ -22,6 +22,7 @@ export default function BookActions({
 
   const [deleting, setDeleting] = useState(false);
   const [message, setMessage] = useState("");
+  const [isError, setIsError] = useState(false);
 
   const isOwner =
     !isPending &&
@@ -35,6 +36,7 @@ export default function BookActions({
   const handleDelete = async () => {
     if (deleting) return;
 
+    // Delete confirmation
     const confirmed = window.confirm(
       "Are you sure you want to delete this book?"
     );
@@ -44,33 +46,43 @@ export default function BookActions({
     try {
       setDeleting(true);
       setMessage("");
+      setIsError(false);
 
       const response = await fetch(
         `/api/backend/books/${encodeURIComponent(bookId)}`,
         {
           method: "DELETE",
           credentials: "include",
+          cache: "no-store",
         }
       );
 
       const result = await response.json();
 
+      // Handle API errors without throwing
       if (!response.ok || !result.success) {
-        throw new Error(
+        setMessage(
           result.message || "Failed to delete book."
         );
+        setIsError(true);
+        return;
       }
+
+      // Successful deletion
+      setMessage("Book deleted successfully!");
+      setIsError(false);
 
       router.replace("/all-books");
       router.refresh();
+
     } catch (error) {
-      console.error("Delete Book Error:", error);
+      console.error("Delete request failed:", error);
 
       setMessage(
-        error instanceof Error
-          ? error.message
-          : "Something went wrong."
+        "Something went wrong. Please try again."
       );
+      setIsError(true);
+
     } finally {
       setDeleting(false);
     }
@@ -79,6 +91,7 @@ export default function BookActions({
   return (
     <div className="mt-4">
       <div className="flex flex-col gap-3 sm:flex-row">
+        {/* Update Button */}
         <Link
           href={`/all-books/${bookId}/edit`}
           className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-[#173F35] px-6 py-4 font-semibold text-white transition hover:bg-[#245747]"
@@ -87,6 +100,7 @@ export default function BookActions({
           Update Book
         </Link>
 
+        {/* Delete Button */}
         <button
           type="button"
           onClick={handleDelete}
@@ -94,17 +108,33 @@ export default function BookActions({
           className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-red-600 px-6 py-4 font-semibold text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {deleting ? (
-            <Loader2 size={19} className="animate-spin" />
+            <>
+              <Loader2
+                size={19}
+                className="animate-spin"
+              />
+              Deleting...
+            </>
           ) : (
-            <Trash2 size={19} />
+            <>
+              <Trash2 size={19} />
+              Delete Book
+            </>
           )}
-
-          {deleting ? "Deleting..." : "Delete Book"}
         </button>
       </div>
 
+      {/* Success / Error Message */}
       {message && (
-        <p role="alert" className="mt-3 text-sm text-red-600">
+        <p
+          role="alert"
+          aria-live="polite"
+          className={`mt-3 text-sm font-medium ${
+            isError
+              ? "text-red-600"
+              : "text-green-700"
+          }`}
+        >
           {message}
         </p>
       )}
